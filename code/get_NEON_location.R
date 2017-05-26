@@ -26,25 +26,43 @@ get_NEON_location <- function(namedLocation = NULL, output = NULL){
   url = paste0('data.neonscience.org/api/v0/locations/', namedLocation)
   request <- httr::GET(url)
   content <- jsonlite::fromJSON(httr::content(request, as = "text"))
+  con = data.frame('namedLocation' = namedLocation,
+                   'decimalLatitude' = NA,
+                   'decimalLongitude' = NA,
+                   'northing' = NA,
+                   'easting' = NA,
+                   'utmZone' = NA,
+                   'elevation' = NA
+                   )
   if(output == 'latlon'){
-    con = data.frame('namedLocation' = content$data$locationName,
-                     'decimalLatitude' = content$data$locationDecimalLatitude,
-                     'decimalLongitude' = content$data$locationDecimalLongitude,
-                     'northing' = content$data$locationUtmNorthing,
-                     'easting' = content$data$locationUtmEasting,
-                     'utmZone' = content$data$locationUtmZone,
-                     'elevation' = content$data$locationElevation)
-    if(nrow(con)>0){
+    if(request$status_code==200){
+    con = data.frame('namedLocation' = ifelse(is.null(content$data$locationName),
+                                              '',content$data$locationName),
+                     'decimalLatitude' = ifelse(is.null(content$data$locationDecimalLatitude),
+                                                '',content$data$locationDecimalLatitude),
+                     'decimalLongitude' = ifelse(is.null(content$data$locationDecimalLongitude),
+                                                 '',content$data$locationDecimalLongitude),
+                     'northing' = ifelse(is.null(content$data$locationUtmNorthing),
+                                         '',content$data$locationUtmNorthing),
+                     'easting' = ifelse(is.null(content$data$locationUtmEasting),
+                                        '',content$data$locationUtmEasting),
+                     'utmZone' = ifelse(is.null(content$data$locationUtmZone),
+                                        '',content$data$locationUtmZone),
+                     'elevation' = ifelse(is.null(content$data$locationElevation),
+                                          '',content$data$locationElevation)
+                     )
+      print(namedLocation)
       return(con)    
     } else {
+      return(con) 
       cat('Does not appear to be a valid named location.')
     }
   }
-  if(output == 'metadata'){
+  if(output == 'metadata'&request$status_code==200){
     return(content$rows)  
   }
   if(output == 'parent'){
-    if(length(con)>1){
+    if(request$status_code==200){
       con = gsub('http://data.neonscience.org:80/api/v0/locations/', 
                  '', content$data$locationParentUrl)
       return(con)  
@@ -53,7 +71,7 @@ get_NEON_location <- function(namedLocation = NULL, output = NULL){
     }
   }
   if(output == 'child'){
-    if(length(con)>1){
+    if(request$status_code==200){
       con = gsub('http://data.neonscience.org:80/api/v0/locations/', 
                  '', content$data$locationChildrenUrls)
       return(con)  
