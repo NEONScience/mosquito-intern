@@ -1,0 +1,120 @@
+---
+title: "Roiger Intern Project Preliminary Code"
+output: word_document
+---
+
+```{r,message=FALSE,echo=FALSE}
+library(tidyverse)
+library(mosaic)
+library(data.table)
+trap = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_trapping_in.csv')
+sort = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_sorting_in.csv')
+id = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_identification_in.csv')
+source('~/mosquito-intern/code/get_NEON_location.R')
+
+
+#Creation of a vector with only the unique PlotIDs
+uniquePlotIDs<-unique(trap$plotID)
+
+
+#Creation of a dataframe with location, lat, and lon using updated function
+lat<-c()
+lon<-c()
+for (i in 1:length(uniquePlotIDs)){
+  lat[i]=unlist(get_NEON_location(namedLocation = uniquePlotIDs[i],output = "latlon")[2],use.names = FALSE)
+  lon[i]=unlist(get_NEON_location(namedLocation = uniquePlotIDs[i],output = "latlon")[3],use.names = FALSE)
+}
+
+uniquePlotIDs<-as.character(uniquePlotIDs)
+latlon.df<-data.frame(uniquePlotIDs,lat,lon)
+
+
+#Removing datapoint with lat lon listed as 1,1
+latlon.df[latlon.df==1]<-NA
+
+
+trap$plotID<-as.character(trap$plotID)
+
+#Testing Out Matching Loop Code on Trap dataframe
+Latitude.Trap<-c()
+Longitude.Trap<-c()
+for (i in 1:nrow(trap)){
+  j<-grep(trap$plotID[i],latlon.df$uniquePlotIDs)
+  Latitude.Trap[i]<-latlon.df$lat[j]
+  Longitude.Trap[i]<-latlon.df$lon[j]
+}
+
+out <- merge(x = latlon.df, y = trap, by.y = "plotID", by.x = "uniquePlotIDs") #merge example
+
+trap<-data.frame(trap, Latitude.Trap, Longitude.Trap)
+
+#Changing plotID from factor to character to prevent errors
+id$plotID<-as.character(id$plotID)
+
+#Applying Loop Code to the ID dataframe
+Latitude.id<-c()
+Longitude.id<-c()
+for (i in 1:nrow(id)){
+  j<-grep(id$plotID[i],latlon.df$uniquePlotIDs)
+  Latitude.id[i]<-latlon.df$lat[j]
+  Longitude.id[i]<-latlon.df$lon[j]
+}
+
+id<-data.frame(id, Latitude.id, Longitude.id)
+
+```
+
+```{r}
+#Five number summary of latitude
+favstats(id$Latitude.id)
+
+#Five number summary of longitude
+favstats(id$Longitude.id)
+
+#Creation of a dataframe that maps plotIds to number of unique scientific names
+specrich.df<-data.frame(with(id, tapply(id$scientificName, id$plotID, FUN = function(x)
+length(unique(x)))))
+
+
+View(specrich.df)
+
+#The issue is that when I create this df, I don't know if, 1) it's actually doing what I want, and 2) There are 2235 instances of missing plotID in our dataframe, what should I do? 3) How do I make this df have two columns instead of one?
+
+#Writing as a CSV to brute force to columns
+write.csv(specrich.df, file="specrich.df")
+specrich.df <- read.csv("~/specrich.df")
+
+#Renaming Columns
+names(specrich.df)[1]<-"plotID"
+names(specrich.df)[2]<-"Species.richness"
+
+#View(specrich.df)
+
+#Countign the number of unique plot IDs in id
+testunique<-order(unique(id$plotID))
+
+#Counting the number of times a null plot id appears
+tally(id$plotID=="")
+
+#Applying Loop Code to the ffs dataframe
+Latitude.sr<-c()
+Longitude.sr<-c()
+for (i in 1:nrow(specrich.df)){
+  j<-grep(specrich.df$plotID[i],latlon.df$uniquePlotIDs)
+  Latitude.sr[i]<-latlon.df$lat[j]
+  Longitude.sr[i]<-latlon.df$lon[j]
+}
+
+specrich.df<-data.frame(specrich.df, Latitude.sr, Longitude.sr)
+#View(specrich.df)
+
+#Preliminary graph of latitude by species richness
+ggplot(specrich.df[!is.na(specrich.df$Latitude.sr)],
+       aes(Latitude.sr, Species.richness))+
+  geom_point(aes(colour = Species.richness))+
+  ggtitle("Species Richness by Latitude")
+
+```
+
+
+
