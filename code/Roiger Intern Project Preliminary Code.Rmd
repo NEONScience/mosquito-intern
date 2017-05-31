@@ -1,7 +1,10 @@
 ---
 title: "Roiger Intern Project Preliminary Code"
-output: word_document
+output:
+  html_document: default
+  word_document: default
 ---
+###Data Frame Set Up
 
 ```{r,message=FALSE,echo=FALSE}
 library(tidyverse)
@@ -32,89 +35,173 @@ latlon.df<-data.frame(uniquePlotIDs,lat,lon)
 #Removing datapoint with lat lon listed as 1,1
 latlon.df[latlon.df==1]<-NA
 
-
 trap$plotID<-as.character(trap$plotID)
 
-#Testing Out Matching Loop Code on Trap dataframe
-Latitude.Trap<-c()
-Longitude.Trap<-c()
-for (i in 1:nrow(trap)){
-  j<-grep(trap$plotID[i],latlon.df$uniquePlotIDs)
-  Latitude.Trap[i]<-latlon.df$lat[j]
-  Longitude.Trap[i]<-latlon.df$lon[j]
-}
+#Merging trap df with lat lon data
+trap <- merge(x = latlon.df, y = trap, by.y = "plotID", by.x = "uniquePlotIDs") #merge example
 
-out <- merge(x = latlon.df, y = trap, by.y = "plotID", by.x = "uniquePlotIDs") #merge example
+#Filling in more lat lon data
+trap$lat2<-ifelse(is.na(trap$lat)==TRUE, trap$pdaDecimalLatitude,trap$lat)
+trap$lon2<-ifelse(is.na(trap$lon)==TRUE, trap$pdaDecimalLongitude,trap$lon)
 
-trap<-data.frame(trap, Latitude.Trap, Longitude.Trap)
+#Extracting Year Information for trap
+trap$Year<-substr(trap$collectDate,1,4)
+
+#Creating a dataframe with only the unique plotIDs and lat2 lon2 data for merging
+uniquetrap<-trap[!duplicated(trap[,1]),c("uniquePlotIDs","lat2","lon2")]
 
 #Changing plotID from factor to character to prevent errors
 id$plotID<-as.character(id$plotID)
 
-#Applying Loop Code to the ID dataframe
-Latitude.id<-c()
-Longitude.id<-c()
-for (i in 1:nrow(id)){
-  j<-grep(id$plotID[i],latlon.df$uniquePlotIDs)
-  Latitude.id[i]<-latlon.df$lat[j]
-  Longitude.id[i]<-latlon.df$lon[j]
-}
+#Merging id df with lat2 lon2 data
+id <- merge(x = uniquetrap, y = id, by.y = "plotID", by.x = "uniquePlotIDs")
 
-id<-data.frame(id, Latitude.id, Longitude.id)
+#Extracting year information for id
+id$Year<-substr(id$collectDate,1,4)
+
+#Chaning year to be a factor rather than a character
+id$Year<-as.factor(id$Year)
+
+#Creating subsets based on year for id df
+levels(id$Year)
+
+id2012<-id[id$Year==2012,]
+id2013<-id[id$Year==2013,]
+id2014<-id[id$Year==2014,]
+id2015<-id[id$Year==2015,]
+id2016<-id[id$Year==2016,]
+
+#Working on writing a function that would automatically subset by year? My issue is in the naming of the dataframe then importing it to the global environment every time I run the function the df gets named "dfname" rather than the desired input
+
+#SubsetYear<-function(df,year){
+  #dfname <-readline(prompt = "What is the desired name of your new dataframe: ")
+  #dfname<-as.character(dfname)
+  #dfname <<-df[df$Year==year,]
+ #}
+#SubsetYear(id,2012)
 
 ```
+
+###Species Richness Dataframes
 
 ```{r}
-#Five number summary of latitude
-favstats(id$Latitude.id)
-
-#Five number summary of longitude
-favstats(id$Longitude.id)
+#If I merge dataframes then it automatically removes the null plot ID
 
 #Creation of a dataframe that maps plotIds to number of unique scientific names
-specrich.df<-data.frame(with(id, tapply(id$scientificName, id$plotID, FUN = function(x)
-length(unique(x)))))
-
-
-View(specrich.df)
-
-#The issue is that when I create this df, I don't know if, 1) it's actually doing what I want, and 2) There are 2235 instances of missing plotID in our dataframe, what should I do? 3) How do I make this df have two columns instead of one?
-
-#Writing as a CSV to brute force to columns
-write.csv(specrich.df, file="specrich.df")
-specrich.df <- read.csv("~/specrich.df")
+specrich <-data.frame(sort(uniquePlotIDs),with(id, tapply(id$scientificName, id$uniquePlotIDs, FUN = function(x)
+length(unique(x)))), row.names = NULL)
 
 #Renaming Columns
-names(specrich.df)[1]<-"plotID"
-names(specrich.df)[2]<-"Species.richness"
+names(specrich)[1]<-"uniquePlotIDs"
+names(specrich)[2]<-"Species.richness"
 
-#View(specrich.df)
+#Merging to get lat2 lon2 data
+specrich <- merge(x = uniquetrap, y = specrich, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
 
-#Countign the number of unique plot IDs in id
-testunique<-order(unique(id$plotID))
 
-#Counting the number of times a null plot id appears
-tally(id$plotID=="")
+#Creation of a 2012 dataframe that maps plotIds to number of unique scientific names
+specrich2012<-data.frame(sort(uniquePlotIDs),with(id2012, tapply(id2012$scientificName, id2012$uniquePlotIDs, FUN = function(x)
+length(unique(x)))), row.names = NULL)
 
-#Applying Loop Code to the ffs dataframe
-Latitude.sr<-c()
-Longitude.sr<-c()
-for (i in 1:nrow(specrich.df)){
-  j<-grep(specrich.df$plotID[i],latlon.df$uniquePlotIDs)
-  Latitude.sr[i]<-latlon.df$lat[j]
-  Longitude.sr[i]<-latlon.df$lon[j]
-}
+#Renaming Columns
+names(specrich2012)[1]<-"uniquePlotIDs"
+names(specrich2012)[2]<-"Species.richness"
 
-specrich.df<-data.frame(specrich.df, Latitude.sr, Longitude.sr)
-#View(specrich.df)
+#Merging to get lat2 lon2 data
+specrich2012 <- merge(x = uniquetrap, y = specrich2012, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
 
-#Preliminary graph of latitude by species richness
-ggplot(specrich.df[!is.na(specrich.df$Latitude.sr)],
-       aes(Latitude.sr, Species.richness))+
+#Creation of a 2013 dataframe that maps plotIds to number of unique scientific names
+specrich2013<-data.frame(sort(uniquePlotIDs),with(id2013, tapply(id2013$scientificName, id2013$uniquePlotIDs, FUN = function(x)
+length(unique(x)))), row.names = NULL)
+
+#Renaming Columns
+names(specrich2013)[1]<-"uniquePlotIDs"
+names(specrich2013)[2]<-"Species.richness"
+
+#Merging to get lat2 lon2 data
+specrich2013 <- merge(x = uniquetrap, y = specrich2013, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
+
+#Creation of a 2014 dataframe that maps plotIds to number of unique scientific names
+specrich2014<-data.frame(sort(uniquePlotIDs),with(id2014, tapply(id2014$scientificName, id2014$uniquePlotIDs, FUN = function(x)
+length(unique(x)))), row.names = NULL)
+
+#Renaming Columns
+names(specrich2014)[1]<-"uniquePlotIDs"
+names(specrich2014)[2]<-"Species.richness"
+
+#Merging to get lat2 lon2 data
+specrich2014 <- merge(x = uniquetrap, y = specrich2014, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
+
+#Creation of a 2015 dataframe that maps plotIds to number of unique scientific names
+specrich2015<-data.frame(sort(uniquePlotIDs),with(id2015, tapply(id2015$scientificName, id2015$uniquePlotIDs, FUN = function(x)
+length(unique(x)))), row.names = NULL)
+
+#Renaming Columns
+names(specrich2015)[1]<-"uniquePlotIDs"
+names(specrich2015)[2]<-"Species.richness"
+
+#Merging to get lat2 lon2 data
+specrich2015 <- merge(x = uniquetrap, y = specrich2015, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
+
+#Creation of a 2016 dataframe that maps plotIds to number of unique scientific names
+specrich2016<-data.frame(sort(uniquePlotIDs),with(id2016, tapply(id2016$scientificName, id2016$uniquePlotIDs, FUN = function(x)
+length(unique(x)))), row.names = NULL)
+
+#Renaming Columns
+names(specrich2016)[1]<-"uniquePlotIDs"
+names(specrich2016)[2]<-"Species.richness"
+
+#Merging to get lat2 lon2 data
+specrich2016 <- merge(x = uniquetrap, y = specrich2016, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
+
+
+#Applying Loop Code to the specrich dataframe
+#Latitude.sr<-c()
+#Longitude.sr<-c()
+#for (i in 1:nrow(specrich.df)){
+  #j<-grep(specrich.df$plotID[i],latlon.df$uniquePlotIDs)
+  #Latitude.sr[i]<-latlon.df$lat[j]
+  #Longitude.sr[i]<-latlon.df$lon[j]
+#}
+
+#specrich.df<-data.frame(specrich.df, Latitude.sr, Longitude.sr)
+```
+
+###Graphs and Visualizations
+```{r}
+#Preliminary graph of latitude by species richness for 2012
+ggplot(specrich2012,aes(lat2, Species.richness))+
   geom_point(aes(colour = Species.richness))+
-  ggtitle("Species Richness by Latitude")
+  ggtitle("Species Richness by Latitude in 2012")
+
+#Preliminary graph of latitude by species richness for 2013
+ggplot(specrich2013,aes(lat2, Species.richness))+
+  geom_point(aes(colour = Species.richness))+
+  ggtitle("Species Richness by Latitude in 2013")
+
+#Preliminary graph of latitude by species richness for 2014
+ggplot(specrich2014,aes(lat2, Species.richness))+
+  geom_point(aes(colour = Species.richness))+
+  ggtitle("Species Richness by Latitude in 2014")
+
+#Preliminary graph of latitude by species richness for 2015
+ggplot(specrich2015,aes(lat2, Species.richness))+
+  geom_point(aes(colour = Species.richness))+
+  ggtitle("Species Richness by Latitude in 2015")
+
+#Preliminary graph of latitude by species richness for 2016
+ggplot(specrich2016,aes(lat2, Species.richness))+
+  geom_point(aes(colour = Species.richness))+
+  ggtitle("Species Richness by Latitude in 2016")
 
 ```
 
+###Preliminary Modeling
 
+```{r}
+mod2016<-lm(Species.richness~lat2,data=specrich2016)
+summary(mod2016)
+
+
+```
 
