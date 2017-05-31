@@ -168,6 +168,7 @@ specrich2016 <- merge(x = uniquetrap, y = specrich2016, by.y = "uniquePlotIDs", 
 ```
 
 ###Graphs and Visualizations
+
 ```{r}
 #Preliminary graph of latitude by species richness for 2012
 ggplot(specrich2012,aes(lat2, Species.richness))+
@@ -193,6 +194,7 @@ ggplot(specrich2015,aes(lat2, Species.richness))+
 ggplot(specrich2016,aes(lat2, Species.richness))+
   geom_point(aes(colour = Species.richness))+
   ggtitle("Species Richness by Latitude in 2016")
+  
 
 ```
 
@@ -202,6 +204,21 @@ ggplot(specrich2016,aes(lat2, Species.richness))+
 mod2016<-lm(Species.richness~lat2,data=specrich2016)
 summary(mod2016)
 
+#Scatterplot with regression fit for 2016
+ggplot(mod2016$model,aes(lat2, Species.richness))+
+  geom_point(aes(colour = Species.richness))+
+  ggtitle("Species Richness by Latitude in 2016")+
+  stat_smooth(method = "lm", col = "red")
+
+
+mod2014<-lm(Species.richness~lat2,data=specrich2014)
+summary(mod2014)
+
+#Scatterplot with regression fit for 2014
+ggplot(mod2014$model,aes(lat2, Species.richness))+
+  geom_point(aes(colour = Species.richness))+
+  ggtitle("Species Richness by Latitude in 2014")+
+  stat_smooth(method = "lm", col = "red")
 
 ```
 
