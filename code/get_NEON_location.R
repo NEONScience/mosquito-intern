@@ -51,7 +51,7 @@ get_NEON_location <- function(namedLocation = NULL, output = NULL){
                      'elevation' = ifelse(is.null(content$data$locationElevation),
                                           '',content$data$locationElevation)
                      )
-      print(namedLocation)
+      #print(namedLocation)
       return(con)    
     } else {
       return(con) 
