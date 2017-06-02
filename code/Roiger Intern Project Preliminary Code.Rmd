@@ -1,5 +1,6 @@
 ---
 title: "Roiger Intern Project Preliminary Code"
+author: "Charlotte Roiger"
 output:
   html_document: default
   word_document: default
@@ -13,6 +14,7 @@ library(data.table)
 trap = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_trapping_in.csv')
 sort = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_sorting_in.csv')
 id = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_identification_in.csv')
+pathogen = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_pathogenresults_in.csv')
 source('~/mosquito-intern/code/get_NEON_location.R')
 
 
@@ -61,6 +63,15 @@ id$Year<-substr(id$collectDate,1,4)
 
 #Chaning year to be a factor rather than a character
 id$Year<-as.factor(id$Year)
+
+#Working on time difference offset variable 
+
+#Checks to see if all obs are on the same day or two different days and nothing else
+tally(substr(id$setDate,9,10)==substr(id$collectDate,9,10))
+tally(substr(id$setDate,9,10)!=substr(id$collectDate,9,10))
+
+#Variable that contains the time difference between set and collection in hours
+id$Timediff<-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate[8],15,16))/60)+(as.numeric(substr(id$setDate[8],12,13)))))
 
 #Creating subsets based on year for id df
 levels(id$Year)
@@ -147,12 +158,15 @@ specrich2015 <- merge(x = uniquetrap, y = specrich2015, by.y = "uniquePlotIDs", 
 specrich2016<-data.frame(sort(uniquePlotIDs),with(id2016, tapply(id2016$scientificName, id2016$uniquePlotIDs, FUN = function(x)
 length(unique(x)))), row.names = NULL)
 
+#Creation of df to account for time offset 2016
+id2016s<-id2016[sort(unique(id2016$uniquePlotIDs)),c("uniquePlotIDs", "Timediff")]
+
 #Renaming Columns
 names(specrich2016)[1]<-"uniquePlotIDs"
 names(specrich2016)[2]<-"Species.richness"
 
 #Merging to get lat2 lon2 data
-specrich2016 <- merge(x = uniquetrap, y = specrich2016, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
+specrich2016 <- merge(x = id2016s, y = specrich2016, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
 
 
 #Applying Loop Code to the specrich dataframe
@@ -167,58 +181,109 @@ specrich2016 <- merge(x = uniquetrap, y = specrich2016, by.y = "uniquePlotIDs", 
 #specrich.df<-data.frame(specrich.df, Latitude.sr, Longitude.sr)
 ```
 
+###Some Data Poking (Exploring)
+
+```{r}
+library(scales)
+#Over representation of females in ID sample
+tally(id$sex)
+
+#Table of proportions of female versus male over time
+prop.table(table(id$Year,id$sex),1)
+
+#Instances of Ae. albopictus by year
+table(id$Year,id$scientificName=="Aedes albopictus")
+
+#Number of times each species identified in id df
+tally(id$scientificName)
+
+#Tracking number of sites where Ae. Albopictus has been identified
+albo2014<- id2014[id2014$scientificName=="Aedes albopictus",]
+albo2015<- id2015[id2015$scientificName=="Aedes albopictus",]
+albo2016<- id2016[id2016$scientificName=="Aedes albopictus",]
+
+length(unique(albo2014$uniquePlotIDs)) #18
+length(unique(albo2015$uniquePlotIDs)) #9
+length(unique(albo2016$uniquePlotIDs)) #45
+
+#Preliminary findings suggest large amount of fluctuation in number of sites, could be due to sampling procedure or changes in biotic variables at each site
+
+#Sum of Ae. albopictus for each year
+sum(albo2014$individualCount) # 64
+sum(albo2015$individualCount) # 40
+sum(albo2016$individualCount) # 308
+
+#Proportion of Ae. albopictus relative to total number collected by year
+sum(albo2014$individualCount)/sum(complete.cases(id2014$individualCount)) #0.00605
+sum(albo2015$individualCount)/sum(complete.cases(id2015$individualCount)) #0.04264
+sum(albo2016$individualCount)/sum(complete.cases(id2016$individualCount)) #0.01281
+
+#Slight increase in proportion of Ae. Albopictus caught over time relative to total number of mosquitos caught exception of 2016. 
+
+```
+
 ###Graphs and Visualizations
 
 ```{r}
-#Preliminary graph of latitude by species richness for 2012
-ggplot(specrich2012,aes(lat2, Species.richness))+
+#Preliminary graph of latitude by species richness overall
+ggplot(specrich,aes(lat2, Species.richness))+
   geom_point(aes(colour = Species.richness))+
-  ggtitle("Species Richness by Latitude in 2012")
+  ggtitle("Species Richness by Latitude all years")
+
+#Scatterplot with regression fit for 2012 ng
+ggplot(mod2012$model,aes(lat2, Species.richness))+
+  geom_point(aes(colour = Species.richness))+
+  ggtitle("Species Richness by Latitude in 2012")+
+  stat_smooth(method = "lm", col = "red")
 
 #Preliminary graph of latitude by species richness for 2013
 ggplot(specrich2013,aes(lat2, Species.richness))+
   geom_point(aes(colour = Species.richness))+
   ggtitle("Species Richness by Latitude in 2013")
 
-#Preliminary graph of latitude by species richness for 2014
-ggplot(specrich2014,aes(lat2, Species.richness))+
+#Scatterplot with regression fit for 2014 nb
+ggplot(mod2014$model,aes(lat2, Species.richness))+
   geom_point(aes(colour = Species.richness))+
-  ggtitle("Species Richness by Latitude in 2014")
+  ggtitle("Species Richness by Latitude in 2014")+
+  stat_smooth(method = "lm", col = "red")
 
-#Preliminary graph of latitude by species richness for 2015
-ggplot(specrich2015,aes(lat2, Species.richness))+
+#Scatterplot with regression fit for 2015 ng 
+ggplot(mod2015$model,aes(lat2, Species.richness))+
   geom_point(aes(colour = Species.richness))+
-  ggtitle("Species Richness by Latitude in 2015")
+  ggtitle("Species Richness by Latitude in 2015")+
+  stat_smooth(method = "lm", col = "red")
 
-#Preliminary graph of latitude by species richness for 2016
-ggplot(specrich2016,aes(lat2, Species.richness))+
+#Scatterplot with regression fit for 2016 g
+ggplot(mod2016$model,aes(lat2, Species.richness))+
   geom_point(aes(colour = Species.richness))+
-  ggtitle("Species Richness by Latitude in 2016")
-  
+  ggtitle("Species Richness by Latitude in 2016")+
+  stat_smooth(method = "lm", col = "red")
+
+#Visualization of proportion of female mosquitos over time
+ggplot(id, aes(x = Year, fill = sex)) +
+  geom_bar(position = "fill")+
+  labs(y = "Proportions")+
+  ggtitle("Proportions of Female Mosquitos by Year")
 
 ```
 
 ###Preliminary Modeling
 
 ```{r}
-mod2016<-lm(Species.richness~lat2,data=specrich2016)
-summary(mod2016)
+mod2012<-lm(Species.richness~lat2,data=specrich2012) #Sparse
+summary(mod2012)
 
-#Scatterplot with regression fit for 2016
-ggplot(mod2016$model,aes(lat2, Species.richness))+
-  geom_point(aes(colour = Species.richness))+
-  ggtitle("Species Richness by Latitude in 2016")+
-  stat_smooth(method = "lm", col = "red")
-
+#omitted 2013 model due to lack of viable data to form model
 
 mod2014<-lm(Species.richness~lat2,data=specrich2014)
 summary(mod2014)
 
-#Scatterplot with regression fit for 2014
-ggplot(mod2014$model,aes(lat2, Species.richness))+
-  geom_point(aes(colour = Species.richness))+
-  ggtitle("Species Richness by Latitude in 2014")+
-  stat_smooth(method = "lm", col = "red")
+mod2015<-lm(Species.richness~lat2,data=specrich2015) #Sparse
+summary(mod2015)
 
+mod2016<-lm(Species.richness~lat2 + Timediff,data=specrich2016)
+summary(mod2016)
+anova(lm(Species.richness~lat2, data = specrich2016), mod2016)
+
+#Fitting a model with the time difference offset for the 2016 model significantly improves the model however the problem is that when we usethe offset, we reduce the complexity of the data since the species richness is calculated based on unique plot ids, but time diff is different for each sample.  
 ```
-
