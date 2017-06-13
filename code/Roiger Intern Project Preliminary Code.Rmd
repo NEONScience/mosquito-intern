@@ -19,6 +19,7 @@ pathogen = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_pat
 taxonomy.df = read.csv("~/mosquito-intern/resources/mosquito_taxonomy.csv")
 precip.df = read.csv('~/mosquito-intern/resources/precipitation.csv')
 temp.df = read.csv("~/mosquito-intern/resources/temperature_maximum.csv")
+domain.df = read.csv("~/mosquito-intern/data/domainid_siteid_match.csv")
 source('~/mosquito-intern/code/get_NEON_location.R')
 
 
@@ -91,6 +92,8 @@ id <- merge(x = precip.df[,c(1,4,9)], y = id, by.y = c('siteID', 'date'), by.x =
 id$value<-id$value/10
 names(id)[3]<-"Precipmm"
 
+#Merge with domain info.
+id <- merge(x = domain.df, y = id, by.y = "siteID", by.x = "siteid", all.y = TRUE)
 
 #Working on time difference offset variable 
 
@@ -102,9 +105,11 @@ tally(substr(id$setDate,9,10)!=substr(id$collectDate,9,10))
 id$Timediff<-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate[8],15,16))/60)+(as.numeric(substr(id$setDate[8],12,13)))))
 
 
-#Creating subsets based on year for id df
-levels(id$Year)
+#Changing Time diff to numeric
+id$Timediff <- as.numeric(id$Timediff)
 
+
+#Year subsets
 id2012<-id[id$Year==2012,]
 id2013<-id[id$Year==2013,]
 id2014<-id[id$Year==2014,]
@@ -182,36 +187,36 @@ sum(albo2016$individualCount)/sum(complete.cases(id2016$individualCount)) #0.012
 
 ```{r}
 #Preliminary graph of latitude by species richness overall
-ggplot(specrich,aes(lat2, Species.richness))+
-  geom_point(aes(colour = Species.richness))+
+ggplot(specrich,aes(lat2, num_species))+
+  geom_point(aes(colour = num_species))+
   ggtitle("Species Richness by Latitude all years")
 
 #Scatterplot with regression fit for 2012 ng
-ggplot(mod2012$model,aes(lat2, Species.richness))+
-  geom_point(aes(colour = Species.richness))+
+ggplot(mod2012$model,aes(lat2, num_species))+
+  geom_point(aes(colour = num_species))+
   ggtitle("Species Richness by Latitude in 2012")+
   stat_smooth(method = "lm", col = "red")
 
 #Preliminary graph of latitude by species richness for 2013
-ggplot(specrich2013,aes(lat2, Species.richness))+
-  geom_point(aes(colour = Species.richness))+
+ggplot(specrich2013,aes(lat2, num_species))+
+  geom_point(aes(colour = num_species))+
   ggtitle("Species Richness by Latitude in 2013")
 
 #Scatterplot with regression fit for 2014 nb
-ggplot(mod2014$model,aes(lat2, Species.richness))+
-  geom_point(aes(colour = Species.richness))+
+ggplot(mod2014$model,aes(lat2, num_species))+
+  geom_point(aes(colour = num_species))+
   ggtitle("Species Richness by Latitude in 2014")+
   stat_smooth(method = "lm", col = "red")
 
 #Scatterplot with regression fit for 2015 ng 
-ggplot(mod2015$model,aes(lat2, Species.richness))+
-  geom_point(aes(colour = Species.richness))+
+ggplot(mod2015$model,aes(lat2, num_species))+
+  geom_point(aes(colour = num_species))+
   ggtitle("Species Richness by Latitude in 2015")+
   stat_smooth(method = "lm", col = "red")
 
 #Scatterplot with regression fit for 2016 g
-ggplot(mod2016$model,aes(lat2, Species.richness))+
-  geom_point(aes(colour = Species.richness))+
+ggplot(mod2016$model,aes(lat2, num_species))+
+  geom_point(aes(colour = num_species))+
   ggtitle("Species Richness by Latitude in 2016")+
   stat_smooth(method = "lm", col = "red")
 
@@ -221,12 +226,77 @@ ggplot(id, aes(x = Year, fill = sex)) +
   labs(y = "Proportions")+
   ggtitle("Proportions of Female Mosquitos by Year")
 
+#Max Temp for Year 2012
+ggplot(specrich2012, aes(as.Date(collectDate), Max.TempC)) +
+  geom_point(aes(colour = num_species)) +
+  labs(x = "Date", y = "Maximum Temperature in Celsius") +
+  ggtitle("Maximum Temperature for the Year 2012")
+
+#Max Temp for Year 2013
+ggplot(specrich2013, aes(as.Date(collectDate), Max.TempC)) +
+  geom_point(aes(colour = num_species)) +
+  labs(x = "Date", y = "Maximum Temperature in Celsius") +
+  ggtitle("Maximum Temperature for the Year 2013")
+
+
+#Max Temp for Year 2014
+ggplot(specrich2014, aes(as.Date(collectDate), Max.TempC)) +
+  geom_point(aes(colour = num_species)) +
+  labs(x = "Date", y = "Maximum Temperature in Celsius") +
+  ggtitle("Maximum Temperature for the Year 2014")
+
+
+#Max Temp for Year 2015
+ggplot(specrich2015, aes(as.Date(collectDate), Max.TempC)) +
+  geom_point(aes(colour = Precipmm)) +
+  labs(x = "Date", y = "Maximum Temperature in Celsius") +
+  ggtitle("Maximum Temperature for the Year 2015")
+
+
+#Max Temp for Year 2016
+ggplot(specrich2016, aes(as.Date(collectDate), Max.TempC)) +
+  geom_point(aes(colour = num_species)) +
+  labs(x = "Date", y = "Maximum Temperature in Celsius") +
+  ggtitle("Maximum Temperature for the Year 2016")
+
+
+#Precip for Year 2012
+ggplot(specrich2012, aes(as.Date(collectDate), Precipmm)) +
+  geom_point(aes(colour = num_species)) +
+  labs(x = "Date", y = "Precipitation in mm") +
+  ggtitle("Precipitation for the Year 2012")
+
+#Precip for Year 2013
+ggplot(specrich2013, aes(as.Date(collectDate), Precipmm)) +
+  geom_point(aes(colour = num_species)) +
+  labs(x = "Date", y = "Precipitation in mm") +
+  ggtitle("Precipitation for the Year 2013")
+
+#Precip for Year 2014
+ggplot(specrich2014, aes(as.Date(collectDate), Precipmm)) +
+  geom_point(aes(colour = num_species)) +
+  labs(x = "Date", y = "Precipitation in mm") +
+  ggtitle("Precipitation for the Year 2014")
+
+#Precip for Year 2015
+ggplot(specrich2015, aes(as.Date(collectDate), Precipmm)) +
+  geom_point(aes(colour = num_species)) +
+  labs(x = "Date", y = "Precipitation in mm") +
+  ggtitle("Precipitation for the Year 2015")
+
+#Precip for Year 2016
+ggplot(specrich2016, aes(as.Date(collectDate), Precipmm)) +
+  geom_point(aes(colour = num_species)) +
+  labs(x = "Date", y = "Precipitation in mm") +
+  ggtitle("Precipitation for the Year 2016")
+
+
 ```
 
 ###Preliminary Modeling
 
 ```{r}
-#Preliminary lat mods
+#Preliminary Linear mods
 
 mod2012 <-lm(num_species~lat2,data=specrich2012) #Sparse
 summary(mod2012)
@@ -306,3 +376,15 @@ combo.modyearfactor <- lm(num_species~lat2 + Precipmm + Max.TempC + Year, data =
 summary(combo.modyearfactor)
 
 ```
+
+```{r}
+#Multi Level Linear Modeling
+library(lme4)
+
+#Model A (Unconditional means model)
+Null.mll <- lmer(num_species ~ 1 + (1|uniquePlotIDs), REML=T, data=specrich)
+summary(Null.mll)
+
+
+```
+
