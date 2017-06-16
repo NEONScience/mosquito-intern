@@ -1,29 +1,24 @@
 ---
 layout: post
-title: "Clean & Combine Carabid Beetle Data from the NEON Data Portal"
-date:  2016-12-16
-authors: [Katie LeVan]
-contributors: [Megan A. Jones] 
-dateCreated: 2016-12-16
+title: "Latitudinal Gradients in Mosquito Species Richness: Contributing Factors and Changes Over Time"
+date:  2017-06-16
+authors: [Charlotte Roiger]
+dateCreated: 2017-06-16
 lastModified: `r format(Sys.time(), "%Y-%m-%d")`
-description: "This tutorial explains how to clean and combine the three related NEON carabid beetle datatables."
+description: "FILL IN WITH A ONE LINE DESCRIPTION OF TUTORIAL"
 image:
   feature: TeachingModules.jpg
   credit: A National Ecological Observatory Network (NEON) - Teaching Module
   creditlink: http://www.neonscience.org
-permalink: /R/carabid-clean-data
-code1: carabid-beetle-data/Beetle-Data-Clean-Portal-Data.R
-code2: carabid-beetle-data/carabid-NEON-data-cleanup.R
+permalink: /R/carabid-clean-data # update later
+code1: carabid-beetle-data/Beetle-Data-Clean-Portal-Data.R # update later
+code2: carabid-beetle-data/carabid-NEON-data-cleanup.R # update later
 comments: false
 ---
 
 {% include _toc.html %}
 
-This tutorial focuses on cleaning and combining the three tables from the 
-NEON Data Portal related to Carabid Beetle data. This tutorial accompanies the 
-<a href="{{ site.basurl }}/R/carabid-explore-data" target="_blank"> *Work with NEON Carabid Beetle Data* tutorial</a> 
-which explains the structure of the data and explains how to work with the 
-combined data. 
+The study of mosquitos is important because of their roles as both members of complex ecological food chains but also as vectors for human diseases. In order to address research questions about mosquito populations in the United States, we need the requisite skills and access to data to carry out analysis. This tutorial will focus on obtaining data from the NEON data portal and the Global Historical Climatology Network, provide methods for composing data frames with relevant information, and a preliminary exploration of various research questions related to mosquito data.
 
 **R Skill Level:** Introduction - you've got the basics of `R` down and 
 understand the general structure of tabular data.
@@ -33,11 +28,16 @@ understand the general structure of tabular data.
 # Objectives
 After completing this tutorial, you will:
 
-* ADD
+*	Download mosquito trapping, identification, and sorting information from the NEON data portal
+* Download precipitation and temperature data from Global Historical Climatology Network
+* Merge data frames to create one unified data frame with relevant variables to address research questions
+* Subset data by year
+* Use ggplot2 in R to create visualizations of data trends and maps  
+
 
 ## Things You’ll Need To Complete This Tutorial
 You will need the most current version of R and, preferably, RStudio loaded on
-your computer to complete this tutorial.
+your computer to complete this tutorial. Also, some previous R experience
 
 ### Install R Packages
 
@@ -46,6 +46,11 @@ installed prior to starting the tutorial.
  
 * **dplyr:** `install.packages("dplyr")`
 * **plyr:** `install.packages("plyr")`
+* **Tidyverse*:*
+b.	Plyr
+c.	Mosaic
+d.	Lme4 (maybe)
+e.	metScanR
 
 
 ### Download The Data
