@@ -51,20 +51,20 @@ trap <- merge(x = latlon.df, y = trap, by.y = "plotID", by.x = "uniquePlotIDs") 
 trap$lat2<-ifelse(is.na(trap$lat)==TRUE, trap$pdaDecimalLatitude,trap$lat)
 trap$lon2<-ifelse(is.na(trap$lon)==TRUE, trap$pdaDecimalLongitude,trap$lon)
 
-#Extracting Year Information for trap
-trap$Year<-substr(trap$collectDate,1,4)
-
-#Exctracting date information for trap
-trap$Date<-substr(trap$setDate,1,10)
+#Merging trap df with sort df
+trap<- merge(x = sort[,c("sampleID", "setDate", "subsampleID", "totalWeight", "subsampleWeight", "bycatchWeight")], y = trap, by.y = c("sampleID", "setDate"), by.x = c("sampleID", "setDate"), all.y = T)
 
 #Creating a dataframe with only the unique plotIDs and lat2 lon2 data for merging
-uniquetrap<-trap[!duplicated(trap[,1]),c("uniquePlotIDs","lat2","lon2")]
+uniquetrap<-trap[!duplicated(trap[,7]),c("uniquePlotIDs","lat2","lon2")]
 
 #Changing plotID from factor to character to prevent errors
 id$plotID<-as.character(id$plotID)
 
 #Merging id df with lat2 lon2 data
 id <- merge(x = uniquetrap, y = id, by.y = "plotID", by.x = "uniquePlotIDs")
+
+#Merge with trap so that id df contains samples where no mosquitos were found
+id <- merge(x = trap[,c(1, 2:7,18,24,35,36)], y = id, by.y = c('subsampleID', 'lat2', 'lon2', 'uniquePlotIDs'), by.x = c('subsampleID', 'lat2', 'lon2', 'uniquePlotIDs'), all.x = T)
 
 #Extracting year information for id
 id$Year<-substr(id$collectDate,1,4)
@@ -73,7 +73,7 @@ id$Year<-substr(id$collectDate,1,4)
 id$Year<-as.factor(id$Year)
 
 #Exctracting date information for id
-id$Date<-substr(id$setDate,1,10)
+id$Date<-substr(id$setDate.x,1,10)
 
 #Broad Site ID variable
 id$siteID<-substr(id$uniquePlotIDs,1,4)
@@ -102,11 +102,11 @@ tally(substr(id$setDate,9,10)==substr(id$collectDate,9,10))
 tally(substr(id$setDate,9,10)!=substr(id$collectDate,9,10))
 
 #Variable that contains the time difference between set and collection in hours
-id$Timediff<-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate[8],15,16))/60)+(as.numeric(substr(id$setDate[8],12,13)))))
+id$Timediff<-ifelse(substr(id$setDate.x,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate.x,15,16))/60)+(as.numeric(substr(id$setDate.x,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate.x[8],15,16))/60)+(as.numeric(substr(id$setDate.x[8],12,13)))))
 
 
 #Changing Time diff to numeric
-id$Timediff <- as.numeric(id$Timediff)
+id$Timediff <- abs(as.numeric(id$Timediff))
 
 
 #Year subsets
@@ -124,7 +124,7 @@ id2016<-id[id$Year==2016,]
 #If I merge dataframes then it automatically removes the null plot ID
 
 #Creation of a dataframe that maps plotIds to number of unique scientific names
-specrich <- ddply(id, ~ uniquePlotIDs + collectDate + Year + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
+specrich <- ddply(id, ~ uniquePlotIDs + collectDate + Year + Timediff + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
 
 
 #Merging to get lat2 lon2 data
@@ -186,6 +186,7 @@ sum(albo2016$individualCount)/sum(complete.cases(id2016$individualCount)) #0.012
 ###Graphs and Visualizations
 
 ```{r}
+######## NEED TO FIX TO MELD WITH CURRENT ID DATAFRAME CURRENT CODE BROKEN ##############
 #Preliminary graph of latitude by species richness overall
 ggplot(specrich,aes(lat2, num_species))+
   geom_point(aes(colour = num_species))+
@@ -381,10 +382,18 @@ summary(combo.modyearfactor)
 #Multi Level Linear Modeling
 library(lme4)
 
-#Model A (Unconditional means model)
-Null.mll <- lmer(num_species ~ 1 + (1|uniquePlotIDs), REML=T, data=specrich)
+#Level one vars measured at each sample: Time Diff
+#level two vars measured at each site: Latitude, Precip, Temperature
+#level three vars measured at each domain: NLDC
+#Unconditional means model
+Null.mll <- lmer(num_species ~ 1 + (1|uniquePlotIDs), REML= F, data=specrich)
 summary(Null.mll)
 
+Latonly.mll <- lmer(num_species ~ lat2 + (1|uniquePlotIDs), REML = F, data = specrich)
+summary(Latonly.mll)
 
+Latonly2.mll <- lmer(num_species ~ lat2 * Timediff + (Timediff|uniquePlotIDs), REML = F, data = specrich)
+
+anova(Latonly.mll, Latonly2.mll)
 ```
 
