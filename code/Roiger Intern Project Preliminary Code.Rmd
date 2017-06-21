@@ -8,6 +8,7 @@ output:
 ###Data Frame Set Up
 
 ```{r,message=FALSE,echo=FALSE}
+# install.packages('tidyverse')
 library(tidyverse)
 library(mosaic)
 library(plyr)
@@ -106,7 +107,7 @@ names(id)[3]<-"Precipmm"
 id <- merge(x = domain.df, y = id, by.y = "siteID", by.x = "siteid", all.y = TRUE)
 id$domainid <- as.character(id$domainid)
 
-#Working on time difference offset variable 
+#Working on time difference offset variable
 
 #Checks to see if all obs are on the same day or two different days and nothing else
 tally(substr(id$setDate,9,10)==substr(id$collectDate,9,10))
@@ -143,8 +144,8 @@ id2016<-id[id$Year==2016,]
 #Creation of a dataframe that maps plotIds to number of unique scientific names
 specrich <- ddply(id, ~ uniquePlotIDs + collectDate + Year + Timediff + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
 
-
-#Merging to get lat2 lon2 data
+# 
+# #Merging to get lat2 lon2 data
 specrich <- merge(x = uniquetrap, y = specrich, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
 
 #Changin year to a factor
@@ -198,16 +199,16 @@ sum(na.omit(albo2015$newindividualCount)) # 43
 sum(na.omit(albo2016$newindividualCount)) # 433
 
 #Proportion of Ae. albopictus relative to total number collected by year
-sum(complete.cases(albo2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount)) 
-sum(complete.cases(albo2015$newindividualCount))/sum(complete.cases(id2015$newindividualCount)) 
-sum(complete.cases(albo2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount)) 
+sum(complete.cases(albo2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount))
+sum(complete.cases(albo2015$newindividualCount))/sum(complete.cases(id2015$newindividualCount))
+sum(complete.cases(albo2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))
 
-#Slight increase in proportion of Ae. Albopictus caught over time relative to total number of mosquitos caught exception of 2016. 
+#Slight increase in proportion of Ae. Albopictus caught over time relative to total number of mosquitos caught exception of 2016.
 
 
 ############## Culex tarsalis #########################
 
-#Instances of Cu. tarsalis by Year 
+#Instances of Cu. tarsalis by Year
 table(id$Year, id$scientificName=="Culex tarsalis")
 
 #Tracking number of sites where Cu. tarsalis has been identified
@@ -218,13 +219,16 @@ tars2016<- id2016[grepl("Culex tarsalis", id2016$scientificName),]
 
 #Examples of tars<- id[id$scientificName=="Culex tarsalis",]
 
-#Create df for domain ID and native code NEED HELP OPTIMIZING THIS UGLY UGLY CODE
-tarstax <- unlist(c(taxonomy.df[grepl("Culex tarsalis", taxonomy.df$scientificName), grepl("NativeStatusCode", colnames(taxonomy.df))])[c(5:15,17:23)])
+#Create df for domain ID and native code
+
+tarstax <- tidyr:: gather(taxonomy.df[grepl("Culex tarsalis", taxonomy.df$scientificName), grepl("NativeStatusCode", colnames(taxonomy.df))], "Domain ID")
+
+tarstax<-tarstax[c(5:15,17:23),]
 
 tarstax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeStatus"= tarstax)
 
 #Merge Cu. tarsalis taxonomy df with tars df
-tars <- merge(x = tarstax.df, y = tars, by.x = "domainID", by.y = "domainid")
+tars <- merge(x = tarstax.df, y = tars, by.x = "domainID", by.y = "domainID")
 
 #number of sites of appearance
 length(unique(tars$uniquePlotIDs)) #160
@@ -239,9 +243,9 @@ sum(tars2014$newindividualCount) # 17,432
 sum(na.omit(tars2016$newindividualCount)) # 11,827
 
 #Proportion of Cu. tarsalis relative to total number collected by year
-sum(complete.cases(tars2013$newindividualCount))/sum(complete.cases(id2013$newindividualCount)) 
-sum(complete.cases(tars2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount)) 
-sum(complete.cases(tars2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount)) 
+sum(complete.cases(tars2013$newindividualCount))/sum(complete.cases(id2013$newindividualCount))
+sum(complete.cases(tars2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount))
+sum(complete.cases(tars2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))
 
 #Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
 tars.firstdomain <- tars[match(unique(tars$domainID), tars$domainID),]
@@ -258,108 +262,108 @@ tars.firstplot <- tars[match(unique(tars$uniquePlotIDs), tars$uniquePlotIDs),]
 ```{r}
 ######## NEED TO FIX TO MELD WITH CURRENT ID DATAFRAME CURRENT CODE BROKEN ##############
 #Preliminary graph of latitude by species richness overall
-ggplot(specrich,aes(lat2, num_species))+
-  geom_point(aes(colour = num_species))+
-  ggtitle("Species Richness by Latitude all years")
+# ggplot(specrich,aes(lat2, num_species))+
+#   geom_point(aes(colour = num_species))+
+#   ggtitle("Species Richness by Latitude all years")
 
 #Scatterplot with regression fit for 2012 ng
-ggplot(mod2012$model,aes(lat2, num_species))+
-  geom_point(aes(colour = num_species))+
-  ggtitle("Species Richness by Latitude in 2012")+
-  stat_smooth(method = "lm", col = "red")
+# ggplot(mod2012$model,aes(lat2, num_species))+
+#   geom_point(aes(colour = num_species))+
+#   ggtitle("Species Richness by Latitude in 2012")+
+#   stat_smooth(method = "lm", col = "red")
 
 #Preliminary graph of latitude by species richness for 2013
-ggplot(specrich2013,aes(lat2, num_species))+
-  geom_point(aes(colour = num_species))+
-  ggtitle("Species Richness by Latitude in 2013")
+# ggplot(specrich2013,aes(lat2, num_species))+
+#   geom_point(aes(colour = num_species))+
+#   ggtitle("Species Richness by Latitude in 2013")
 
 #Scatterplot with regression fit for 2014 nb
-ggplot(mod2014$model,aes(lat2, num_species))+
-  geom_point(aes(colour = num_species))+
-  ggtitle("Species Richness by Latitude in 2014")+
-  stat_smooth(method = "lm", col = "red")
+# ggplot(mod2014$model,aes(lat2, num_species))+
+#   geom_point(aes(colour = num_species))+
+#   ggtitle("Species Richness by Latitude in 2014")+
+#   stat_smooth(method = "lm", col = "red")
 
 #Scatterplot with regression fit for 2015 ng 
-ggplot(mod2015$model,aes(lat2, num_species))+
-  geom_point(aes(colour = num_species))+
-  ggtitle("Species Richness by Latitude in 2015")+
-  stat_smooth(method = "lm", col = "red")
+# ggplot(mod2015$model,aes(lat2, num_species))+
+#   geom_point(aes(colour = num_species))+
+#   ggtitle("Species Richness by Latitude in 2015")+
+#   stat_smooth(method = "lm", col = "red")
 
 #Scatterplot with regression fit for 2016 g
-ggplot(mod2016$model,aes(lat2, num_species))+
-  geom_point(aes(colour = num_species))+
-  ggtitle("Species Richness by Latitude in 2016")+
-  stat_smooth(method = "lm", col = "red")
+# ggplot(mod2016$model,aes(lat2, num_species))+
+#   geom_point(aes(colour = num_species))+
+#   ggtitle("Species Richness by Latitude in 2016")+
+#   stat_smooth(method = "lm", col = "red")
 
 #Visualization of proportion of female mosquitos over time
-ggplot(id, aes(x = Year, fill = sex)) +
-  geom_bar(position = "fill")+
-  labs(y = "Proportions")+
-  ggtitle("Proportions of Female Mosquitos by Year")
+# ggplot(id, aes(x = Year, fill = sex)) +
+#   geom_bar(position = "fill")+
+#   labs(y = "Proportions")+
+#   ggtitle("Proportions of Female Mosquitos by Year")
 
 #Max Temp for Year 2012
-ggplot(specrich2012, aes(as.Date(collectDate), Max.TempC)) +
-  geom_point(aes(colour = num_species)) +
-  labs(x = "Date", y = "Maximum Temperature in Celsius") +
-  ggtitle("Maximum Temperature for the Year 2012")
+# ggplot(specrich2012, aes(as.Date(collectDate), Max.TempC)) +
+#   geom_point(aes(colour = num_species)) +
+#   labs(x = "Date", y = "Maximum Temperature in Celsius") +
+#   ggtitle("Maximum Temperature for the Year 2012")
 
 #Max Temp for Year 2013
-ggplot(specrich2013, aes(as.Date(collectDate), Max.TempC)) +
-  geom_point(aes(colour = num_species)) +
-  labs(x = "Date", y = "Maximum Temperature in Celsius") +
-  ggtitle("Maximum Temperature for the Year 2013")
+# ggplot(specrich2013, aes(as.Date(collectDate), Max.TempC)) +
+#   geom_point(aes(colour = num_species)) +
+#   labs(x = "Date", y = "Maximum Temperature in Celsius") +
+#   ggtitle("Maximum Temperature for the Year 2013")
 
 
 #Max Temp for Year 2014
-ggplot(specrich2014, aes(as.Date(collectDate), Max.TempC)) +
-  geom_point(aes(colour = num_species)) +
-  labs(x = "Date", y = "Maximum Temperature in Celsius") +
-  ggtitle("Maximum Temperature for the Year 2014")
+# ggplot(specrich2014, aes(as.Date(collectDate), Max.TempC)) +
+#   geom_point(aes(colour = num_species)) +
+#   labs(x = "Date", y = "Maximum Temperature in Celsius") +
+#   ggtitle("Maximum Temperature for the Year 2014")
 
 
 #Max Temp for Year 2015
-ggplot(specrich2015, aes(as.Date(collectDate), Max.TempC)) +
-  geom_point(aes(colour = Precipmm)) +
-  labs(x = "Date", y = "Maximum Temperature in Celsius") +
-  ggtitle("Maximum Temperature for the Year 2015")
+# ggplot(specrich2015, aes(as.Date(collectDate), Max.TempC)) +
+#   geom_point(aes(colour = Precipmm)) +
+#   labs(x = "Date", y = "Maximum Temperature in Celsius") +
+#   ggtitle("Maximum Temperature for the Year 2015")
 
 
 #Max Temp for Year 2016
-ggplot(specrich2016, aes(as.Date(collectDate), Max.TempC)) +
-  geom_point(aes(colour = num_species)) +
-  labs(x = "Date", y = "Maximum Temperature in Celsius") +
-  ggtitle("Maximum Temperature for the Year 2016")
+# ggplot(specrich2016, aes(as.Date(collectDate), Max.TempC)) +
+#   geom_point(aes(colour = num_species)) +
+#   labs(x = "Date", y = "Maximum Temperature in Celsius") +
+#   ggtitle("Maximum Temperature for the Year 2016")
 
 
 #Precip for Year 2012
-ggplot(specrich2012, aes(as.Date(collectDate), Precipmm)) +
-  geom_point(aes(colour = num_species)) +
-  labs(x = "Date", y = "Precipitation in mm") +
-  ggtitle("Precipitation for the Year 2012")
+# ggplot(specrich2012, aes(as.Date(collectDate), Precipmm)) +
+#   geom_point(aes(colour = num_species)) +
+#   labs(x = "Date", y = "Precipitation in mm") +
+#   ggtitle("Precipitation for the Year 2012")
 
 #Precip for Year 2013
-ggplot(specrich2013, aes(as.Date(collectDate), Precipmm)) +
-  geom_point(aes(colour = num_species)) +
-  labs(x = "Date", y = "Precipitation in mm") +
-  ggtitle("Precipitation for the Year 2013")
+# ggplot(specrich2013, aes(as.Date(collectDate), Precipmm)) +
+#   geom_point(aes(colour = num_species)) +
+#   labs(x = "Date", y = "Precipitation in mm") +
+#   ggtitle("Precipitation for the Year 2013")
 
 #Precip for Year 2014
-ggplot(specrich2014, aes(as.Date(collectDate), Precipmm)) +
-  geom_point(aes(colour = num_species)) +
-  labs(x = "Date", y = "Precipitation in mm") +
-  ggtitle("Precipitation for the Year 2014")
+# ggplot(specrich2014, aes(as.Date(collectDate), Precipmm)) +
+#   geom_point(aes(colour = num_species)) +
+#   labs(x = "Date", y = "Precipitation in mm") +
+#   ggtitle("Precipitation for the Year 2014")
 
 #Precip for Year 2015
-ggplot(specrich2015, aes(as.Date(collectDate), Precipmm)) +
-  geom_point(aes(colour = num_species)) +
-  labs(x = "Date", y = "Precipitation in mm") +
-  ggtitle("Precipitation for the Year 2015")
+# ggplot(specrich2015, aes(as.Date(collectDate), Precipmm)) +
+#   geom_point(aes(colour = num_species)) +
+#   labs(x = "Date", y = "Precipitation in mm") +
+#   ggtitle("Precipitation for the Year 2015")
 
 #Precip for Year 2016
-ggplot(specrich2016, aes(as.Date(collectDate), Precipmm)) +
-  geom_point(aes(colour = num_species)) +
-  labs(x = "Date", y = "Precipitation in mm") +
-  ggtitle("Precipitation for the Year 2016")
+# ggplot(specrich2016, aes(as.Date(collectDate), Precipmm)) +
+#   geom_point(aes(colour = num_species)) +
+#   labs(x = "Date", y = "Precipitation in mm") +
+#   ggtitle("Precipitation for the Year 2016")
 
 
 ```
@@ -369,101 +373,101 @@ ggplot(specrich2016, aes(as.Date(collectDate), Precipmm)) +
 ```{r}
 #Preliminary Linear mods
 
-mod2012 <-lm(num_species~lat2,data=specrich2012) #Sparse
-summary(mod2012)
-
-#omitted 2013 model due to lack of viable data to form model
-
-mod2014 <-lm(num_species~lat2,data=specrich2014)
-summary(mod2014)
-
-mod2015 <-lm(numspecies~lat2,data=specrich2015) #Sparse
-summary(mod2015)
-
-mod2016 <-lm(num_species~lat2,data=specrich2016)
-summary(mod2016)
-
-modallyears <- lm(num_species~lat2, data=specrich)
-summary(modallyears)
-
-modyearfactor <- lm(num_species~lat2 + Year, data = specrich)
-summary(modyearfactor)
-
-#Precipitation Models
-precip.mod2012 <- lm(num_species~lat2 + Precipmm, data = specrich2012)
-summary(precip.mod2012)
-
-precip.mod2014 <- lm(num_species~lat2 + Precipmm, data = specrich2014)
-summary(precip.mod2014)
-
-precip.mod2015 <- lm(num_species~lat2 + Precipmm, data = specrich2015)
-summary(precip.mod2015)
-
-precip.mod2016 <- lm(num_species~lat2 + Precipmm, data = specrich2016)
-summary(precip.mod2016)
-
-precip.modallyears <- lm(num_species~lat2 + Precipmm, data=specrich)
-summary(precip.modallyears)
-
-precip.modyearfactor <- lm(num_species~lat2 + Precipmm + Year, data = specrich)
-summary(precip.modyearfactor)
-
-#Max Temp Models
-maxtemp.mod2012 <- lm(num_species~lat2 + Max.TempC, data = specrich2012)
-summary(maxtemp.mod2012)
-
-maxtemp.mod2014 <- lm(num_species~lat2 + Max.TempC, data = specrich2014)
-summary(maxtemp.mod2014)
-
-maxtemp.mod2015 <- lm(num_species~lat2 + Max.TempC, data = specrich2015)
-summary(maxtemp.mod2015)
-
-maxtemp.mod2016 <- lm(num_species~lat2 + Max.TempC, data = specrich2016)
-summary(maxtemp.mod2016)
-
-maxtemp.modallyears <- lm(num_species~lat2 + Max.TempC, data = specrich)
-summary(maxtemp.modallyears)
-
-maxtemp.modyearfactor <- lm(num_species~lat2 + Max.TempC + Year, data = specrich)
-summary(maxtemp.modyearfactor)
-
-#Maxtemp and precip combination models
-
-combo.mod2012 <- lm(num_species~lat2 + Precipmm + Max.TempC, data = specrich2012)
-summary(combo.mod2012)
-
-combo.mod2014 <- lm(num_species~lat2 + Precipmm + Max.TempC, data = specrich2014)
-summary(combo.mod2014)
-
-combo.mod2015 <- lm(num_species~lat2 + Precipmm + Max.TempC, data = specrich2015)
-summary(combo.mod2015)
-
-combo.mod2016 <- lm(num_species~lat2 + Precipmm + Max.TempC, data = specrich2016)
-
-combo.modallyears <- lm(num_species~lat2 + Precipmm + Max.TempC, data = specrich)
-summary(combo.modallyears)
-
-combo.modyearfactor <- lm(num_species~lat2 + Precipmm + Max.TempC + Year, data = specrich)
-summary(combo.modyearfactor)
+# mod2012 <-lm(num_species~lat2,data=specrich2012) #Sparse
+# summary(mod2012)
+# 
+# #omitted 2013 model due to lack of viable data to form model
+# 
+# mod2014 <-lm(num_species~lat2,data=specrich2014)
+# summary(mod2014)
+# 
+# mod2015 <-lm(numspecies~lat2,data=specrich2015) #Sparse
+# summary(mod2015)
+# 
+# mod2016 <-lm(num_species~lat2,data=specrich2016)
+# summary(mod2016)
+# 
+# modallyears <- lm(num_species~lat2, data=specrich)
+# summary(modallyears)
+# 
+# modyearfactor <- lm(num_species~lat2 + Year, data = specrich)
+# summary(modyearfactor)
+# 
+# #Precipitation Models
+# precip.mod2012 <- lm(num_species~lat2 + Precipmm, data = specrich2012)
+# summary(precip.mod2012)
+# 
+# precip.mod2014 <- lm(num_species~lat2 + Precipmm, data = specrich2014)
+# summary(precip.mod2014)
+# 
+# precip.mod2015 <- lm(num_species~lat2 + Precipmm, data = specrich2015)
+# summary(precip.mod2015)
+# 
+# precip.mod2016 <- lm(num_species~lat2 + Precipmm, data = specrich2016)
+# summary(precip.mod2016)
+# 
+# precip.modallyears <- lm(num_species~lat2 + Precipmm, data=specrich)
+# summary(precip.modallyears)
+# 
+# precip.modyearfactor <- lm(num_species~lat2 + Precipmm + Year, data = specrich)
+# summary(precip.modyearfactor)
+# 
+# #Max Temp Models
+# maxtemp.mod2012 <- lm(num_species~lat2 + Max.TempC, data = specrich2012)
+# summary(maxtemp.mod2012)
+# 
+# maxtemp.mod2014 <- lm(num_species~lat2 + Max.TempC, data = specrich2014)
+# summary(maxtemp.mod2014)
+# 
+# maxtemp.mod2015 <- lm(num_species~lat2 + Max.TempC, data = specrich2015)
+# summary(maxtemp.mod2015)
+# 
+# maxtemp.mod2016 <- lm(num_species~lat2 + Max.TempC, data = specrich2016)
+# summary(maxtemp.mod2016)
+# 
+# maxtemp.modallyears <- lm(num_species~lat2 + Max.TempC, data = specrich)
+# summary(maxtemp.modallyears)
+# 
+# maxtemp.modyearfactor <- lm(num_species~lat2 + Max.TempC + Year, data = specrich)
+# summary(maxtemp.modyearfactor)
+# 
+# #Maxtemp and precip combination models
+# 
+# combo.mod2012 <- lm(num_species~lat2 + Precipmm + Max.TempC, data = specrich2012)
+# summary(combo.mod2012)
+# 
+# combo.mod2014 <- lm(num_species~lat2 + Precipmm + Max.TempC, data = specrich2014)
+# summary(combo.mod2014)
+# 
+# combo.mod2015 <- lm(num_species~lat2 + Precipmm + Max.TempC, data = specrich2015)
+# summary(combo.mod2015)
+# 
+# combo.mod2016 <- lm(num_species~lat2 + Precipmm + Max.TempC, data = specrich2016)
+# 
+# combo.modallyears <- lm(num_species~lat2 + Precipmm + Max.TempC, data = specrich)
+# summary(combo.modallyears)
+# 
+# combo.modyearfactor <- lm(num_species~lat2 + Precipmm + Max.TempC + Year, data = specrich)
+# summary(combo.modyearfactor)
 
 ```
 
 ```{r}
 #Multi Level Linear Modeling
-library(lme4)
+# library(lme4)
 
 #Level one vars measured at each sample: Time Diff
 #level two vars measured at each site: Latitude, Precip, Temperature
 #level three vars measured at each domain: NLDC
 #Unconditional means model
-Null.mll <- lmer(num_species ~ 1 + (1|uniquePlotIDs), REML= F, data=specrich)
-summary(Null.mll)
+# Null.mll <- lmer(num_species ~ 1 + (1|uniquePlotIDs), REML= F, data=specrich)
+# summary(Null.mll)
+# 
+# Latonly.mll <- lmer(num_species ~ lat2 + (1|uniquePlotIDs), REML = F, data = specrich)
+# summary(Latonly.mll)
+# 
+# Latonly2.mll <- lmer(num_species ~ lat2 * Timediff + (Timediff|uniquePlotIDs), REML = F, data = specrich)
 
-Latonly.mll <- lmer(num_species ~ lat2 + (1|uniquePlotIDs), REML = F, data = specrich)
-summary(Latonly.mll)
-
-Latonly2.mll <- lmer(num_species ~ lat2 * Timediff + (Timediff|uniquePlotIDs), REML = F, data = specrich)
-
-anova(Latonly.mll, Latonly2.mll)
+# anova(Latonly.mll, Latonly2.mll)
 ```
 

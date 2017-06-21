@@ -26,7 +26,7 @@ understand the general structure of tabular data.
 <div id="objectives" markdown="1">
 
 # Objectives
-After completing this tutorial, you will:
+After completing this tutorial, you will be able to:
 
 *	Download mosquito trapping, identification, and sorting information from the NEON data portal
 * Download precipitation and temperature data from Global Historical Climatology Network

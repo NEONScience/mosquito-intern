@@ -9,8 +9,8 @@ library(rbokeh) # Maybe with a map?
 library(dplyr)
 
 # My working directory
-if(file.exists('~/GitHub/mosquito_intern')){
-  repo_location = '~/GitHub/mosquito_intern'
+if(file.exists('~/mosquito-intern')){
+  repo_location = '~/mosquito-intern'
 }
 if(!exists('repo_location')){stop('Set the location of the neon_data repository.')}
 
@@ -23,4 +23,8 @@ Dmap<-readShapePoly(paste(repo_location, '/resources/spatial files/NEON_Domains.
 crs(Dmap) <- "+proj=utm +units=m +ellps=WGS84"
 
 # Map the data
-plot(Dmap,col="#ADA96E",bg='#77BFC7',main='NEON Domains',cex.main=3)
+plot(Dmap,col="#ADA96E",bg='#77BFC7',main='NEON Domains',cex.main=1)
+points(tars.firstdomain$lon2, tars.firstdomain$lat2, pch=21, bg= "blue",cex=1)
+# points(#long, #lat)
+
+
