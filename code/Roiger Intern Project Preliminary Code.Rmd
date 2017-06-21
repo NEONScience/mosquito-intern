@@ -22,24 +22,18 @@ precip.df = read.csv('~/mosquito-intern/resources/precipitation.csv')
 temp.df = read.csv("~/mosquito-intern/resources/temperature_maximum.csv")
 domain.df = read.csv("~/mosquito-intern/data/domainid_siteid_match.csv")
 source('~/mosquito-intern/code/get_NEON_location.R')
+# source('~/GitHub/mosquito-intern/code/get_NEON_location.R') # this is Cody's file path
+uniquePlotIDs <- unique(trap$plotID)
 
+## apply get_NEON_location function to vector uniquePlotIDs, returns a list where each element is a single plotID with GPS data
+st <- Sys.time() # profiling start time
+latlon <- lapply(uniquePlotIDs, get_NEON_location, output="latlon")
+end <- Sys.time(); end - st # profiling end time; calculate function execution duration
 
-
-#Creation of a vector with only the unique PlotIDs
-uniquePlotIDs<-unique(trap$plotID)
-
-
-#Creation of a dataframe with location, lat, and lon using updated function
-lat<-c()
-lon<-c()
-for (i in 1:length(uniquePlotIDs)){
-  lat[i]=unlist(get_NEON_location(namedLocation = uniquePlotIDs[i],output = "latlon")[2],use.names = FALSE)
-  lon[i]=unlist(get_NEON_location(namedLocation = uniquePlotIDs[i],output = "latlon")[3],use.names = FALSE)
-}
-
-uniquePlotIDs<-as.character(uniquePlotIDs)
-latlon.df<-data.frame(uniquePlotIDs,lat,lon)
-
+## convert list into data.frame
+latlon.df <- do.call(rbind, latlon)
+## matching the names of your columns
+names(latlon.df) <- c("uniquePlotIDs", "lat", "lon", "northing", "easting", "utmZone", "elevation") 
 
 #Removing datapoint with lat lon listed as 1,1
 latlon.df[latlon.df==1]<-NA
@@ -47,7 +41,7 @@ latlon.df[latlon.df==1]<-NA
 trap$plotID<-as.character(trap$plotID)
 
 #Merging trap df with lat lon data
-trap <- merge(x = latlon.df, y = trap, by.y = "plotID", by.x = "uniquePlotIDs") #merge example
+trap <- merge(x = latlon.df, y = trap, by.x = "uniquePlotIDs", by.y = "plotID") #merge example
 
 #Filling in more lat lon data
 trap$lat2<-ifelse(is.na(trap$lat)==TRUE, trap$pdaDecimalLatitude,trap$lat)
