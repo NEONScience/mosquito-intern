@@ -155,91 +155,267 @@ specrich2016 &lt;- specrich[specrich$Year==2016,]</code></pre>
 <div id="julian-date-of-first-occurence-versus-lat" class="section level3">
 <h3>Julian Date of first occurence versus lat</h3>
 <pre class="r"><code>#Over representation of females in ID sample
-# tally(id$sex)
+tally(id$sex)</code></pre>
+<pre><code>## X
+##     F     M     U  &lt;NA&gt; 
+## 44521   964  1050  8088</code></pre>
+<pre class="r"><code>#Table of proportions of female versus male over time
+prop.table(table(id$Year,id$sex),1)</code></pre>
+<pre><code>##       
+##                  F           M           U
+##   2012 0.963636364 0.036363636 0.000000000
+##   2013 0.917513863 0.074399261 0.008086876
+##   2014 0.956857651 0.013469165 0.029673185
+##   2015 0.882241216 0.007597341 0.110161443
+##   2016 0.966138242 0.015293695 0.018568063
+##   2017</code></pre>
+<pre class="r"><code>#Instances of Ae. albopictus by year
+table(id$Year,id$scientificName==&quot;Aedes albopictus&quot;)</code></pre>
+<pre><code>##       
+##        FALSE  TRUE
+##   2012  1484     1
+##   2013  4327     1
+##   2014 14576    50
+##   2015  1030    23
+##   2016 24823   220
+##   2017     0     0</code></pre>
+<pre class="r"><code>#Number of times each species identified in id df
+tally(id$scientificName)</code></pre>
+<pre><code>## X
+##                                                    Aedes abserratus 
+##                               900                               180 
+##                     Aedes aegypti                  Aedes albopictus 
+##                                 6                               295 
+##                  Aedes atlanticus                     Aedes aurifer 
+##                               482                                15 
+##                  Aedes campestris                  Aedes canadensis 
+##                                10                              1440 
+##       Aedes canadensis canadensis        Aedes canadensis mathesoni 
+##                               241                                 1 
+##                    Aedes cantator                    Aedes cinereus 
+##                                18                               722 
+##                    Aedes communis                   Aedes diantaeus 
+##                               572                               198 
+##                    Aedes dorsalis                    Aedes epactius 
+##                              1910                                 7 
+##                  Aedes excrucians                     Aedes fitchii 
+##                               732                                21 
+##                  Aedes flavescens              Aedes fulvus pallens 
+##                               392                                41 
+##                  Aedes grossbecki                  Aedes hendersoni 
+##                                 4                                72 
+##                  Aedes hexodontus                     Aedes impiger 
+##                               156                                66 
+##                  Aedes implicatus                  Aedes infirmatus 
+##                                16                               365 
+##                   Aedes intrudens                   Aedes japonicus 
+##                               284                                10 
+##               Aedes mediovittatus                   Aedes melanimon 
+##                                 9                                18 
+##                  Aedes mitchellae                Aedes nigromaculis 
+##                               278                               653 
+##                 Aedes niphadopsis                  Aedes obturbator 
+##                               153                               189 
+##                      Aedes papago                   Aedes provocans 
+##                                35                               365 
+##                    Aedes pullatus                     Aedes punctor 
+##                                23                               569 
+##                 Aedes purpureipes                    Aedes riparius 
+##                                36                                 2 
+##                 Aedes sollicitans                         Aedes sp. 
+##                                47                               190 
+##                   Aedes spencerii                        Aedes spp. 
+##                               282                              1661 
+##                   Aedes sticticus                   Aedes stimulans 
+##                               641                                93 
+##              Aedes taeniorhynchus                    Aedes thelcter 
+##                               429                                 6 
+##                   Aedes thibaulti                   Aedes tormentor 
+##                                11                                 2 
+##                    Aedes tortilis                 Aedes triseriatus 
+##                               214                               762 
+##                 Aedes trivittatus                      Aedes vexans 
+##                               683                              4125 
+##                   Aedes zoosophus               Anopheles albimanus 
+##                                 8                                46 
+##                 Anopheles atropos                 Anopheles barberi 
+##                                 1                                11 
+##                Anopheles crucians                  Anopheles earlei 
+##                              1810                                 4 
+##            Anopheles franciscanus               Anopheles grabhamii 
+##                                 8                                 8 
+##              Anopheles perplexens      Anopheles pseudopunctipennis 
+##                                 2                                55 
+##            Anopheles punctipennis         Anopheles quadrimaculatus 
+##                               978                               568 
+##                     Anopheles sp.                    Anopheles spp. 
+##                               242                               919 
+##           Anopheles vestitipennis                 Anopheles walkeri 
+##                                 1                              1092 
+##         Coquillettidia perturbans                  Culex bahamensis 
+##                              3989                               195 
+##                   Culex coronator                   Culex erraticus 
+##                               229                              3032 
+##                 Culex nigripalpus                    Culex peccator 
+##                              1752                                 1 
+##                     Culex pipiens            Culex quinquefasciatus 
+##                                71                                93 
+##                    Culex restuans                  Culex salinarius 
+##                               438                               935 
+##                         Culex sp.                        Culex spp. 
+##                               243                               644 
+##                    Culex tarsalis                   Culex territans 
+##                              1636                                26 
+##                     Culicidae sp.                    Culicidae spp. 
+##                               161                                92 
+##              Culiseta alaskaensis                Culiseta impatiens 
+##                                68                                61 
+##                 Culiseta incidens                 Culiseta inornata 
+##                                 5                               758 
+##                 Culiseta melanura               Culiseta minnesotae 
+##                               749                                84 
+##                Culiseta morsitans                      Culiseta sp. 
+##                               141                                 3 
+##                     Culiseta spp.                    Mansonia dyari 
+##                                63                                72 
+##                 Mansonia flaveola                      Mansonia sp. 
+##                                 8                                10 
+##                     Mansonia spp.                Mansonia titillans 
+##                                 2                              1234 
+## Ochlerotatus spencerii idahoensis           Orthopodomyia signifera 
+##                                 5                                34 
+##                Psorophora ciliata              Psorophora columbiae 
+##                               380                              1207 
+##             Psorophora cyanescens               Psorophora discolor 
+##                               101                               182 
+##                  Psorophora ferox                Psorophora horrida 
+##                               390                                19 
+##               Psorophora howardii            Psorophora jamaicensis 
+##                                14                                80 
+##             Psorophora johnstonii            Psorophora longipalpus 
+##                                58                                10 
+##              Psorophora mathesoni                Psorophora pygmaea 
+##                                14                                51 
+##            Psorophora signipennis                    Psorophora sp. 
+##                               192                                 4 
+##                   Psorophora spp.                 Uranotaenia lowii 
+##                               229                                68 
+##            Uranotaenia sapphirina                   Uranotaenia sp. 
+##                               223                                29 
+##                  Uranotaenia spp.                     Wyeomyia spp. 
+##                                10                                 5 
+##                Wyeomyia vanduzeei                              &lt;NA&gt; 
+##                                50                              8088</code></pre>
+<pre class="r"><code>#Tracking number of sites where Ae. Albopictus has been identified
+albo&lt;- id[grepl(&quot;Aedes albopictus&quot;, id$scientificName),]
+albo2014&lt;- id2014[grepl(&quot;Aedes albopictus&quot;, id2014$scientificName),]
+albo2015&lt;- id2015[grepl(&quot;Aedes albopictus&quot;, id2015$scientificName),]
+albo2016&lt;- id2016[grepl(&quot;Aedes albopictus&quot;, id2016$scientificName),]
 
-# #Table of proportions of female versus male over time
-# prop.table(table(id$Year,id$sex),1)
-# 
-# #Instances of Ae. albopictus by year
-# table(id$Year,id$scientificName==&quot;Aedes albopictus&quot;)
-# 
-# #Number of times each species identified in id df
-# tally(id$scientificName)
-# 
-# #Tracking number of sites where Ae. Albopictus has been identified
-# albo&lt;- id[grepl(&quot;Aedes albopictus&quot;, id$scientificName),]
-# albo2014&lt;- id2014[grepl(&quot;Aedes albopictus&quot;, id2014$scientificName),]
-# albo2015&lt;- id2015[grepl(&quot;Aedes albopictus&quot;, id2015$scientificName),]
-# albo2016&lt;- id2016[grepl(&quot;Aedes albopictus&quot;, id2016$scientificName),]
-# 
-# #ex of previous code
-# #albo &lt;- id[id$scientificName==&quot;Aedes albopictus&quot;,]
-# 
-# 
-# length(unique(albo2014$uniquePlotIDs)) #18
-# length(unique(albo2015$uniquePlotIDs)) #9
-# length(unique(albo2016$uniquePlotIDs)) #45
-# 
-# #Preliminary findings suggest large amount of fluctuation in number of sites, could be due to sampling procedure or changes in biotic variables at each site
-# 
-# #Sum of Ae. albopictus for each year
-# sum(na.omit(albo2014$newindividualCount)) # 69
-# sum(na.omit(albo2015$newindividualCount)) # 43
-# sum(na.omit(albo2016$newindividualCount)) # 433
-# 
-# #Proportion of Ae. albopictus relative to total number collected by year
-# sum(complete.cases(albo2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount)) 
-# sum(complete.cases(albo2015$newindividualCount))/sum(complete.cases(id2015$newindividualCount)) 
-# sum(complete.cases(albo2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount)) 
-# 
-# #Slight increase in proportion of Ae. Albopictus caught over time relative to total number of mosquitos caught exception of 2016. 
-# 
-# 
-# ############## Culex tarsalis #########################
-# 
-# #Instances of Cu. tarsalis by Year 
-# table(id$Year, id$scientificName==&quot;Culex tarsalis&quot;)
-# 
-# #Tracking number of sites where Cu. tarsalis has been identified
-# tars&lt;- id[grepl(&quot;Culex tarsalis&quot;, id$scientificName),]
-# tars2013&lt;- id2013[grepl(&quot;Culex tarsalis&quot;, id2013$scientificName),]
-# tars2014&lt;- id2014[grepl(&quot;Culex tarsalis&quot;, id2014$scientificName),]
-# tars2016&lt;- id2016[grepl(&quot;Culex tarsalis&quot;, id2016$scientificName),]
-# 
-# #Examples of tars&lt;- id[id$scientificName==&quot;Culex tarsalis&quot;,]
-# 
-# #Create df for domain ID and native code 
-# 
-# tarstax &lt;- tidyr:: gather(taxonomy.df[grepl(&quot;Culex tarsalis&quot;, taxonomy.df$scientificName), grepl(&quot;NativeStatusCode&quot;, colnames(taxonomy.df))], &quot;Domain ID&quot;)
-# 
-# tarstax&lt;-tarstax[c(5:15,17:23),]
-# 
-# tarstax.df &lt;-data.frame(&quot;domainID&quot;= unique(domain.df$domainid), &quot;DomainNativeStatus&quot;= tarstax)
-# 
-# #Merge Cu. tarsalis taxonomy df with tars df
-# tars &lt;- merge(x = tarstax.df, y = tars, by.x = &quot;domainID&quot;, by.y = &quot;domainID&quot;)
-# 
-# #number of sites of appearance
-# length(unique(tars$uniquePlotIDs)) #160
-# length(unique(tars2013$uniquePlotIDs)) #35
-# length(unique(tars2014$uniquePlotIDs)) #40
-# length(unique(tars2016$uniquePlotIDs)) #115
-# 
-# 
-# #Sum of Cu. tarsalis for each year
-# sum(tars2013$newindividualCount) # 1,690
-# sum(tars2014$newindividualCount) # 17,432
-# sum(na.omit(tars2016$newindividualCount)) # 11,827
-# 
-# #Proportion of Cu. tarsalis relative to total number collected by year
-# sum(complete.cases(tars2013$newindividualCount))/sum(complete.cases(id2013$newindividualCount)) 
-# sum(complete.cases(tars2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount)) 
-# sum(complete.cases(tars2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount)) 
-# 
-# #Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
-# tars.firstdomain &lt;- tars[match(unique(tars$domainID), tars$domainID),]
-# tars.firstsite &lt;- tars[match(unique(tars$siteid), tars$siteid),]
-# tars.firstplot &lt;- tars[match(unique(tars$uniquePlotIDs), tars$uniquePlotIDs),]</code></pre>
+#ex of previous code
+#albo &lt;- id[id$scientificName==&quot;Aedes albopictus&quot;,]
+
+
+length(unique(albo2014$uniquePlotIDs)) #18</code></pre>
+<pre><code>## [1] 18</code></pre>
+<pre class="r"><code>length(unique(albo2015$uniquePlotIDs)) #9</code></pre>
+<pre><code>## [1] 9</code></pre>
+<pre class="r"><code>length(unique(albo2016$uniquePlotIDs)) #45</code></pre>
+<pre><code>## [1] 45</code></pre>
+<pre class="r"><code>#Preliminary findings suggest large amount of fluctuation in number of sites, could be due to sampling procedure or changes in biotic variables at each site
+
+#Sum of Ae. albopictus for each year
+sum(na.omit(albo2014$newindividualCount)) # 69</code></pre>
+<pre><code>## [1] 69</code></pre>
+<pre class="r"><code>sum(na.omit(albo2015$newindividualCount)) # 43</code></pre>
+<pre><code>## [1] 43</code></pre>
+<pre class="r"><code>sum(na.omit(albo2016$newindividualCount)) # 433</code></pre>
+<pre><code>## [1] 433</code></pre>
+<pre class="r"><code>#Proportion of Ae. albopictus relative to total number collected by year
+sum(complete.cases(albo2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount))</code></pre>
+<pre><code>## [1] 0.00342724</code></pre>
+<pre class="r"><code>sum(complete.cases(albo2015$newindividualCount))/sum(complete.cases(id2015$newindividualCount))</code></pre>
+<pre><code>## [1] 0.02452026</code></pre>
+<pre class="r"><code>sum(complete.cases(albo2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))</code></pre>
+<pre><code>## [1] 0.008992806</code></pre>
+<pre class="r"><code>#Slight increase in proportion of Ae. Albopictus caught over time relative to total number of mosquitos caught exception of 2016.
+
+#Create df for domain ID and native code
+
+albotax &lt;- tidyr:: gather(taxonomy.df[grepl(&quot;Aedes albopictus&quot;, taxonomy.df$scientificName), grepl(&quot;NativeStatusCode&quot;, colnames(taxonomy.df))], &quot;Domain ID&quot;)</code></pre>
+<pre><code>## Warning: attributes are not identical across measure variables; they will
+## be dropped</code></pre>
+<pre class="r"><code>albotax&lt;-albotax[c(5:15,17:23),]
+
+albotax.df &lt;-data.frame(&quot;domainID&quot;= unique(domain.df$domainid), &quot;DomainNativeStatus&quot;= albotax)
+
+#Merge Cu. tarsalis taxonomy df with albo df
+albo &lt;- merge(x = albotax.df, y = albo, by.x = &quot;domainID&quot;, by.y = &quot;domainid&quot;)
+
+#Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
+albo.firstdomain &lt;- albo[match(unique(albo$domainID), albo$domainID),]
+albo.firstsite &lt;- albo[match(unique(albo$siteid), albo$siteid),]
+albo.firstplot &lt;- albo[match(unique(albo$uniquePlotIDs), albo$uniquePlotIDs),]
+
+############## Culex tarsalis #########################
+
+#Instances of Cu. tarsalis by Year
+table(id$Year, id$scientificName==&quot;Culex tarsalis&quot;)</code></pre>
+<pre><code>##       
+##        FALSE  TRUE
+##   2012  1485     0
+##   2013  4147   181
+##   2014 13860   766
+##   2015  1053     0
+##   2016 24354   689
+##   2017     0     0</code></pre>
+<pre class="r"><code>#Tracking number of sites where Cu. tarsalis has been identified
+tars&lt;- id[grepl(&quot;Culex tarsalis&quot;, id$scientificName),]
+tars2013&lt;- id2013[grepl(&quot;Culex tarsalis&quot;, id2013$scientificName),]
+tars2014&lt;- id2014[grepl(&quot;Culex tarsalis&quot;, id2014$scientificName),]
+tars2016&lt;- id2016[grepl(&quot;Culex tarsalis&quot;, id2016$scientificName),]
+
+#Examples of tars&lt;- id[id$scientificName==&quot;Culex tarsalis&quot;,]
+
+#Create df for domain ID and native code
+
+tarstax &lt;- tidyr:: gather(taxonomy.df[grepl(&quot;Culex tarsalis&quot;, taxonomy.df$scientificName), grepl(&quot;NativeStatusCode&quot;, colnames(taxonomy.df))], &quot;Domain ID&quot;)</code></pre>
+<pre><code>## Warning: attributes are not identical across measure variables; they will
+## be dropped</code></pre>
+<pre class="r"><code>tarstax&lt;-tarstax[c(5:15,17:23),]
+
+tarstax.df &lt;-data.frame(&quot;domainID&quot;= unique(domain.df$domainid), &quot;DomainNativeStatus&quot;= tarstax)
+
+#Merge Cu. tarsalis taxonomy df with tars df
+tars &lt;- merge(x = tarstax.df, y = tars, by.x = &quot;domainID&quot;, by.y = &quot;domainid&quot;)
+
+#number of sites of appearance
+length(unique(tars$uniquePlotIDs)) #160</code></pre>
+<pre><code>## [1] 160</code></pre>
+<pre class="r"><code>length(unique(tars2013$uniquePlotIDs)) #35</code></pre>
+<pre><code>## [1] 35</code></pre>
+<pre class="r"><code>length(unique(tars2014$uniquePlotIDs)) #40</code></pre>
+<pre><code>## [1] 40</code></pre>
+<pre class="r"><code>length(unique(tars2016$uniquePlotIDs)) #115</code></pre>
+<pre><code>## [1] 115</code></pre>
+<pre class="r"><code>#Sum of Cu. tarsalis for each year
+sum(tars2013$newindividualCount) # 1,690</code></pre>
+<pre><code>## [1] 1690</code></pre>
+<pre class="r"><code>sum(tars2014$newindividualCount) # 17,432</code></pre>
+<pre><code>## [1] 17432</code></pre>
+<pre class="r"><code>sum(na.omit(tars2016$newindividualCount)) # 11,827</code></pre>
+<pre><code>## [1] 11827</code></pre>
+<pre class="r"><code>#Proportion of Cu. tarsalis relative to total number collected by year
+sum(complete.cases(tars2013$newindividualCount))/sum(complete.cases(id2013$newindividualCount))</code></pre>
+<pre><code>## [1] 0.04188845</code></pre>
+<pre class="r"><code>sum(complete.cases(tars2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount))</code></pre>
+<pre><code>## [1] 0.05250531</code></pre>
+<pre class="r"><code>sum(complete.cases(tars2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))</code></pre>
+<pre><code>## [1] 0.02795945</code></pre>
+<pre class="r"><code>#Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
+tars.firstdomain &lt;- tars[match(unique(tars$domainID), tars$domainID),]
+tars.firstsite &lt;- tars[match(unique(tars$siteid), tars$siteid),]
+tars.firstplot &lt;- tars[match(unique(tars$uniquePlotIDs), tars$uniquePlotIDs),]</code></pre>
 <div id="working-until-this-point" class="section level28">
 <p>Working until this point</p>
 </div>

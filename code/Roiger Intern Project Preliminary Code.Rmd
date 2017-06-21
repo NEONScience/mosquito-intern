@@ -7,7 +7,7 @@ output:
 ---
 ###Data Frame Set Up
 
-```{r,message=FALSE,echo=FALSE}
+```{r,message=FALSE}
 # install.packages('tidyverse')
 library(tidyverse)
 library(mosaic)
@@ -26,9 +26,10 @@ source('~/mosquito-intern/code/get_NEON_location.R')
 uniquePlotIDs <- unique(trap$plotID)
 
 ## apply get_NEON_location function to vector uniquePlotIDs, returns a list where each element is a single plotID with GPS data
-st <- Sys.time() # profiling start time
+
+# st <- Sys.time() # profiling start time
 latlon <- lapply(uniquePlotIDs, get_NEON_location, output="latlon")
-end <- Sys.time(); end - st # profiling end time; calculate function execution duration
+# end <- Sys.time(); end - st # profiling end time; calculate function execution duration
 
 ## convert list into data.frame
 latlon.df <- do.call(rbind, latlon)
@@ -199,6 +200,21 @@ sum(complete.cases(albo2016$newindividualCount))/sum(complete.cases(id2016$newin
 
 #Slight increase in proportion of Ae. Albopictus caught over time relative to total number of mosquitos caught exception of 2016.
 
+#Create df for domain ID and native code
+
+albotax <- tidyr:: gather(taxonomy.df[grepl("Aedes albopictus", taxonomy.df$scientificName), grepl("NativeStatusCode", colnames(taxonomy.df))], "Domain ID")
+
+albotax<-albotax[c(5:15,17:23),]
+
+albotax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeStatus"= albotax)
+
+#Merge Cu. tarsalis taxonomy df with albo df
+albo <- merge(x = albotax.df, y = albo, by.x = "domainID", by.y = "domainid")
+
+#Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
+albo.firstdomain <- albo[match(unique(albo$domainID), albo$domainID),]
+albo.firstsite <- albo[match(unique(albo$siteid), albo$siteid),]
+albo.firstplot <- albo[match(unique(albo$uniquePlotIDs), albo$uniquePlotIDs),]
 
 ############## Culex tarsalis #########################
 
@@ -222,7 +238,7 @@ tarstax<-tarstax[c(5:15,17:23),]
 tarstax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeStatus"= tarstax)
 
 #Merge Cu. tarsalis taxonomy df with tars df
-tars <- merge(x = tarstax.df, y = tars, by.x = "domainID", by.y = "domainID")
+tars <- merge(x = tarstax.df, y = tars, by.x = "domainID", by.y = "domainid")
 
 #number of sites of appearance
 length(unique(tars$uniquePlotIDs)) #160
