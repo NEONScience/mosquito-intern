@@ -18,14 +18,14 @@ require("ggplot2")
 require("plyr")
 
 
-# # My working directory
-# if(file.exists('~/mosquito-intern')){ # Charlotte's path
-#   repo_location = '~/mosquito-intern'
-# }
-# if(file.exists('~/GitHub/mosquito-intern')){
-#   repo_location = '~/GitHub/mosquito-intern'
-# }
-# if(!exists('repo_location')){stop('Set the location of the neon_data repository.')}
+# My working directory
+if(file.exists('~/mosquito-intern')){ # Charlotte's path
+  repo_location = '~/mosquito-intern'
+}
+if(file.exists('~/GitHub/mosquito-intern')){
+  repo_location = '~/GitHub/mosquito-intern'
+}
+if(!exists('repo_location')){stop('Set the location of the neon_data repository.')}
 
 
 
@@ -44,7 +44,7 @@ require("plyr")
 
 
 #Read in file  
-NEONmap = readOGR(dsn=paste0('mosquito-intern/resources/spatial files/NEON-domain-map'), layer = 'NEON_Domains')
+NEONmap = readShapePoly(paste(repo_location, '/resources/spatial files/NEON-domain-map/NEON_Domains.shp', sep='/'))
 # Manipulate for plotting
 NEONmap@data$id = rownames(NEONmap@data)
 NEONmap.points = fortify(NEONmap, region="id")
@@ -58,3 +58,4 @@ q <- ggplot()+
   geom_polygon(data = NEONmap.df, aes(long, lat, group=group))+
   geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')
 
+plot(q)
