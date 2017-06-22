@@ -198,6 +198,7 @@ sum(complete.cases(albo2014$newindividualCount))/sum(complete.cases(id2014$newin
 sum(complete.cases(albo2015$newindividualCount))/sum(complete.cases(id2015$newindividualCount))
 sum(complete.cases(albo2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))
 
+
 #Slight increase in proportion of Ae. Albopictus caught over time relative to total number of mosquitos caught exception of 2016.
 
 #Create df for domain ID and native code
