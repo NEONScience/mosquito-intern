@@ -18,9 +18,9 @@ comments: false
 
 {% include _toc.html %}
 
-The study of mosquitos is important because of their roles as both members of complex ecological food chains but also as vectors for human diseases. In order to address research questions about mosquito populations in the United States, we need the requisite skills and access to data to carry out analysis. This tutorial will focus on obtaining data from the NEON data portal and the Global Historical Climatology Network, provide methods for composing data frames with relevant information, and a preliminary exploration of various research questions related to mosquito data.
+ In order to address research questions about mosquito populations in the United States, we need the requisite skills and access to data to carry out analysis. This tutorial will focus on obtaining data from the NEON data portal and the Global Historical Climatology Network, provide methods for composing data frames with relevant information, and a preliminary exploration of various research questions related to mosquito data.
 
-**R Skill Level:** Introduction - you've got the basics of `R` down and 
+**R Skill Level:** Introductory - you've got the basics of `R` down and 
 understand the general structure of tabular data.
 
 <div id="objectives" markdown="1">
@@ -46,13 +46,12 @@ installed prior to starting the tutorial.
  
 * **dplyr:** `install.packages("dplyr")`
 * **plyr:** `install.packages("plyr")`
-* **Tidyverse*:*
-b.	Plyr
-c.	Mosaic
-d.	Lme4 (maybe)
-e.	metScanR
+* **tidyverse:** `install.packages("tidyverse")`
+*	**plyr:** `install.packages("plyr")`
+*	**mosaic:** `install.packages("mosaic")`
+*	**metScanR:** `install.packages("metScanR")`
 
-
+################################################################################################
 ### Download The Data
 **NOTE: eventually turn these into teaching data subsets with others, then change to download buttons**
 You can download cleaned data files [here](//github.com/klevan/carabid-workshop/blob/master/data/zip%20files/cleaned-Data.zip), 
@@ -60,17 +59,20 @@ NOAA weather data for each site [here](//github.com/klevan/carabid-workshop/blob
 NEON map shp files [here](//github.com/klevan/carabid-workshop/blob/master/data/zip%20files/map%20data.zip) 
 and the script we will be modifying [here](//github.com/klevan/carabid-workshop/blob/master/code/data-analysis.R). 
 </div>
+##################################################################################################
 
-## NEON Carabid Beetle Data
 
-The carabid beetle data on the NEON Data Portal are divided by site and into 
-three table per site. 
+## NEON Mosquito Data
 
-NEON carabid data are stored in three tables: 
- * field collection data, 
- * sorting data and 
- * identification and pinning data. 
+The mosquito data on the NEON Data Portal are divided by type of information into six tables:
+ * field collection data
+ * sorting data
+ * identification and pinning data
+ * pathogen pooling data
+ * pathogen results data
+ * archiving pooling data
 
+######################################################################################################
 For this tutorial we focus on the 2014 data and the 13 sites
 for which data is available in that year. To look at all this data requires 
 downloading 39 files (one field, sorting and pinning data for each site) and 
@@ -83,8 +85,11 @@ data collection. It is highly recommended you are familiar with the
 target="_blank">data product documents </a>
 prior to using NEON carabid beetle data for your research. 
 
-We'll explore these three tables and then combine them into a single clean
-table for use with analysis. 
+#######################################################################################################
+
+
+We'll explore these six tables and then combine them into a couple of clean
+tables for use with analysis. 
 
 First, set up the R environment. 
 

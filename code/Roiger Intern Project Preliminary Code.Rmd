@@ -22,6 +22,7 @@ precip.df = read.csv('~/mosquito-intern/resources/precipitation.csv')
 temp.df = read.csv("~/mosquito-intern/resources/temperature_maximum.csv")
 domain.df = read.csv("~/mosquito-intern/data/domainid_siteid_match.csv")
 source('~/mosquito-intern/code/get_NEON_location.R')
+source('~/mosquito-intern/code/mapping_viz.R')
 # source('~/GitHub/mosquito-intern/code/get_NEON_location.R') # this is Cody's file path
 uniquePlotIDs <- unique(trap$plotID)
 
@@ -139,8 +140,8 @@ id2016<-id[id$Year==2016,]
 #Creation of a dataframe that maps plotIds to number of unique scientific names
 specrich <- ddply(id, ~ uniquePlotIDs + collectDate + Year + Timediff + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
 
-# 
-# #Merging to get lat2 lon2 data
+
+#Merging to get lat2 lon2 data
 specrich <- merge(x = uniquetrap, y = specrich, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
 
 #Changin year to a factor
@@ -262,6 +263,8 @@ sum(complete.cases(tars2016$newindividualCount))/sum(complete.cases(id2016$newin
 tars.firstdomain <- tars[match(unique(tars$domainID), tars$domainID),]
 tars.firstsite <- tars[match(unique(tars$siteid), tars$siteid),]
 tars.firstplot <- tars[match(unique(tars$uniquePlotIDs), tars$uniquePlotIDs),]
+
+
 
  
 ```
