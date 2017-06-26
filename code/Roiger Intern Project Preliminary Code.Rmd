@@ -17,12 +17,13 @@ trap = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_trappin
 sort = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_sorting_in.csv')
 id = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_identification_in.csv')
 pathogen = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_pathogenresults_in.csv')
-taxonomy.df = read.csv("~/mosquito-intern/resources/mosquito_taxonomy.csv")
+taxonomy = read.csv("~/mosquito-intern/resources/mosquito_taxonomy.csv")
 precip.df = read.csv('~/mosquito-intern/resources/precipitation.csv')
 temp.df = read.csv("~/mosquito-intern/resources/temperature_maximum.csv")
 domain.df = read.csv("~/mosquito-intern/data/domainid_siteid_match.csv")
 source('~/mosquito-intern/code/get_NEON_location.R')
-source('~/mosquito-intern/code/mapping_viz.R')
+
+#source('~/mosquito-intern/code/mapping_viz.R')
 # source('~/GitHub/mosquito-intern/code/get_NEON_location.R') # this is Cody's file path
 uniquePlotIDs <- unique(trap$plotID)
 
@@ -110,10 +111,10 @@ tally(substr(id$setDate,9,10)==substr(id$collectDate,9,10))
 tally(substr(id$setDate,9,10)!=substr(id$collectDate,9,10))
 
 #Variable that contains the time difference between set and collection in hours
-id$Timediff<-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate[8],15,16))/60)+(as.numeric(substr(id$setDate[8],12,13)))))
+id$HoursOfTrapping<-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate[8],15,16))/60)+(as.numeric(substr(id$setDate[8],12,13)))))
 
 #Changing Time diff to numeric
-id$Timediff <- abs(as.numeric(id$Timediff))
+id$HoursOfTrapping <- abs(as.numeric(id$HoursOfTrapping))
 
 #Creation of sample Multiplier
 id$sampleMultiplier <- ifelse(is.na(id$bycatchWeight)==F,id$totalWeight/(id$subsampleWeight-id$bycatchWeight), NA)
@@ -153,6 +154,8 @@ specrich2013 <- specrich[specrich$Year==2013,]
 specrich2014 <- specrich[specrich$Year==2014,]
 specrich2015 <- specrich[specrich$Year==2015,]
 specrich2016 <- specrich[specrich$Year==2016,]
+
+
 
 ```
 
@@ -242,6 +245,8 @@ tarstax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeSta
 #Merge Cu. tarsalis taxonomy df with tars df
 tars <- merge(x = tarstax.df, y = tars, by.x = "domainID", by.y = "domainid")
 
+tars$lat2<- as.numeric(tars$lat2)
+tars$lon2<- as.numeric(tars$lon2)
 #number of sites of appearance
 length(unique(tars$uniquePlotIDs)) #160
 length(unique(tars2013$uniquePlotIDs)) #35
@@ -264,10 +269,20 @@ tars.firstdomain <- tars[match(unique(tars$domainID), tars$domainID),]
 tars.firstsite <- tars[match(unique(tars$siteid), tars$siteid),]
 tars.firstplot <- tars[match(unique(tars$uniquePlotIDs), tars$uniquePlotIDs),]
 
+# Visualizations for domains, sites and plots where cx. tarsalis is present
 
+q + geom_point(data = tars.firstdomain, aes(lon2,lat2), color = "blue")
 
- 
 ```
+
+#Abundance versus latitude
+```{r}
+
+```
+
+
+
+
 
 ############################ Working until this point ###########################################
 

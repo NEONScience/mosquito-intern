@@ -3,6 +3,7 @@
 
 # LIBRARIES
 library(foreign)
+library(rgeos)
 library(maptools)
 library(raster)
 library(rbokeh) # Maybe with a map?
@@ -16,6 +17,7 @@ require("rgdal") # requires sp, will use proj.4 if installed
 require("maptools")
 require("ggplot2")
 require("plyr")
+
 
 
 # My working directory
@@ -44,7 +46,7 @@ if(!exists('repo_location')){stop('Set the location of the neon_data repository.
 
 
 #Read in file  
-NEONmap = readShapePoly(paste(repo_location, '/resources/spatial files/NEON-domain-map/NEON_Domains.shp', sep='/'))
+NEONmap = readOGR(paste('mosquito-intern/resources/spatial files/NEON-domain-map/NEON_Domains.shp', sep='/'))
 # Manipulate for plotting
 NEONmap@data$id = rownames(NEONmap@data)
 NEONmap.points = fortify(NEONmap, region="id")
@@ -58,4 +60,4 @@ q <- ggplot()+
   geom_polygon(data = NEONmap.df, aes(long, lat, group=group))+
   geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')
 
-plot(q)
+

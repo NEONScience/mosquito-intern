@@ -18,7 +18,28 @@ comments: false
 
 {% include _toc.html %}
 
- In order to address research questions about mosquito populations in the United States, we need the requisite skills and access to data to carry out analysis. This tutorial will focus on obtaining data from the NEON data portal and the Global Historical Climatology Network, provide methods for composing data frames with relevant information, and a preliminary exploration of various research questions related to mosquito data.
+To many, mosquitos are nothing more than a seasonal annoyance. However, 
+mosquitos are important for their role in the transmission of human diseases. 
+For example, the species Aedes albopictus is notable in North America for its 
+ability to spread the West Nile Virus and its association with human inhabited 
+urbanized environments (Rochlin et al. 2013). As the environment changes in 
+response to global warming, it is likely that the ranges and habits of mosquitos
+like Aedes albopictus will also change. Differences in mosquito habits over time
+could put an increased number of people at risk for contracting mosquito-borne 
+diseases, so it is important to investigate the various facets of mosquitos 
+interacting with their environments. 
+
+This tutorial will provide a preliminary look at three different avenues of 
+investigation. First, we will examine whether there is a relationship between 
+mosquito species richness and latitude in the United States. The latitudinal 
+diversity gradient (LDG) has been explored in other species such as shore fishes
+and African birds, but little work has been done on LDGs for mosquitos. In this 
+tutorial we will transform NEON data to construct preliminary models of mosquito
+species richness in relation to latitude. A second aspect of mosquito data under
+consideration is the Julian date of first occurrence for certain species of 
+mosquitos. In particular in this tutorial we will be examining the species Culex
+tarsalis because of their abilities to transmit diseases and their relative 
+presence in the NEON data. 
 
 **R Skill Level:** Introductory - you've got the basics of `R` down and 
 understand the general structure of tabular data.
@@ -28,9 +49,12 @@ understand the general structure of tabular data.
 # Objectives
 After completing this tutorial, you will be able to:
 
-*	Download mosquito trapping, identification, and sorting information from the NEON data portal
-* Download precipitation and temperature data from Global Historical Climatology Network
-* Merge data frames to create one unified data frame with relevant variables to address research questions
+*	Download mosquito trapping, identification, and sorting information from the 
+  NEON data portal
+* Download precipitation and temperature data from Global Historical Climatology
+  Network
+* Merge data frames to create one unified data frame with relevant variables to 
+  address research questions
 * Subset data by year
 * Use ggplot2 in R to create visualizations of data trends and maps  
 
@@ -52,6 +76,7 @@ installed prior to starting the tutorial.
 *	**metScanR:** `install.packages("metScanR")`
 
 ################################################################################################
+
 ### Download The Data
 **NOTE: eventually turn these into teaching data subsets with others, then change to download buttons**
 You can download cleaned data files [here](//github.com/klevan/carabid-workshop/blob/master/data/zip%20files/cleaned-Data.zip), 
@@ -64,7 +89,8 @@ and the script we will be modifying [here](//github.com/klevan/carabid-workshop/
 
 ## NEON Mosquito Data
 
-The mosquito data on the NEON Data Portal are divided by type of information into six tables:
+The mosquito data on the NEON Data Portal are divided by type of information 
+into six tables:
  * field collection data
  * sorting data
  * identification and pinning data
@@ -97,6 +123,17 @@ First, set up the R environment.
 # Load packages required for entire script. 
 library(plyr)      # move/manipulate data
 library(dplyr)     # move/manipulate data
+library(foreign)
+library(maptools)
+library(raster)
+library(rbokeh) 
+library(rgdal)
+library(ggplot2)   # creation of plots and visualizations
+library(tidyverse) # move/manipulate data
+library(mosaic)    # good for data exploration
+
+#Set strings as factors equal to false thoughout
+options(stringsAsFactors = FALSE) 
 
 # set working directory to ensure R can find the file we wish to import
 # set to the `carabid-2014-NEON` directory
@@ -110,94 +147,135 @@ library(dplyr)     # move/manipulate data
 Read in the field collection data table. 
 
 ``` {r field-table}
-# read in the data
-car.field.HARV <- read.csv(
-      file="rawData_portalDownloads/NEON.D01.HARV.DP1.10022.001.bet_fielddata.csv",
-      stringsAsFactors = FALSE
-      )
+# read in the data TO BE CHANGED AS PORTAL DEVELOPS
+trap = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_trapping_in.csv')
 
-# view structure of the data
-str(car.field.HARV)
-
+str(trap) #View the first five lines of data to get a feel for the structure
 ```
 
 This table contains information related to:
 
-* the location of each trap in the first 12 fields (i.e., latitude, longitude, 
-NLCD class)
-* metadata about the sampling event, including
+* metadata about the sampling event, includes: 
+   + `plotID`: label of where a sample was collected
    + `setDate`: when traps were set
    + `collectDate`: the date of trap collection
-   + `daysOfTrapping`: the number of days a given trap was in the field
-   + `samplingProtocol`: the document number of the sampling protocol used. These
-   can be found in the 
+   + `sampleID`: unique label of sample collection events
+   + `targetTaxaPresent`:an indication of whether mosquitos were found in the 
+      sample 
+   + `HoursOfTrapping`: the number of days a given trap was in the field
+   + `samplingProtocolVersion`: the document number and the version of the 
+      sampling protocol used. These can be found in the 
 <a href="http://data.neonscience.org/documents" target="_blank"> NEON Documents Library</a>. 
+
+For sake of convenience we have only included the meta data for certain variables
+that we will use to carry out our analysis. For more metadata please see:
+INSERT LINK OR SOMETHING FOR SORT METADATA
+
 * metadata about the quality of the data 
 
 Unique collection events have a unique `sampleID` with the format = 
-`plotID.trapID.collectDate`. 
+`plotID.trapID.collectDate.TimeOfCollection`. 
 
 ### Sorting Data Table
 
 
 ``` {r sort-table}
-# read in sorting data
-car.sort.HARV <- read.csv(
-      file="rawData_portalDownloads/NEON.D01.HARV.DP1.10022.001.bet_sorting.csv",
-      stringsAsFactors = FALSE
-      )
+# read in sorting TO BE CHANGED AS PORTAL DEVELOPS
+sort = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_sorting_in.csv')
 
-# view structure of the data
-str(car.sort.HARV)
-
+str(sort)
 ```
 
-This table contains information about what specimens were found in traps. Sample 
-types include:
+This table contains information about weight of subsamples and weight of bycatch. 
 
-* vertebrate bycatch (herps = `vert bycatch herp`; mammals = `vert bycatch mam`), 
-* non-Carabidae invertebrate bycatch (`invert bycatch`), 
-* and all information about carabids. 
+* metadata about the subsampling event, includes:
+  + `plotID`: label of where a sample was collected
+  + `setDate`: when traps were set
+  + `collectDate`: the date of trap collection
+  + `sampleID`: unique label of sample collection events
+  + `subsampleID`: Unique label of subsampling collection events
+  + `totalWeight`: Total weight of sample
+  + `subsampleWeight`: Total weight of subsample
+  + `bycatchWeight`: Total weight of bycatch in the subsample
 
-Older data (2014 and prior) divide carabid data into two categories: 
+Unique records have a unique `subSampleID` (format = 
+`plotID.trapID.collectDate.TimeofCollection.S.01` ). 
 
-* `common carabid`, for which all taxonomic and abundance data is listed in the 
-sorting dataset, and 
-* `other carabid`, a catch-all category indicating that the relevant taxonomic 
-and abundance information for specimens with that `sampleID` is provided in the 
-pinning dataset. 
+For sake of convenience we have only included the meta data for certain variables
+that we will use to carry out our analysis. For more metadata please see:
+INSERT LINK OR SOMETHING FOR SORT METADATA
 
-Data after 2014 do not seperate between these two group. **Katie, is this correct. My notes from when I asked you weren't very clear**
-
-Unique records have a unique `associatedSampleID` (format = 
-`plotID.trapID.collectDate.taxonID.tubeID` ). For records where taxonomic 
-information is unknown the following shorthand codes are used in place of the 
-`taxonID` based on `sampleType`:
-
-* `ib` for invertebrate bycatch, 
-* `vb` for vertebrate bycatch, 
-* `cc` for common carabid, 
-* `oc` for other carabid.
-
-### Pinning Data Table
+### Identification Data Table
 
 ``` {r field-table}
 # read in data
-car.pin.HARV <- read.csv(
-      file="rawData_portalDownloads/NEON.D01.HARV.DP1.10022.001.bet_IDandpinning.csv",
-      stringsAsFactors = FALSE
-      )
+id = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_identification_in.csv')
 
 # view structure of the data
-str(car.pin.HARV)
-
+str(id)
 ```
 
-The pinning table contains information about all carabids that were pinned or 
-pointed. Each sample in the pinning dataset has a unique identifier 
-(`individualID`). The data in this table include location of the sample (but 
-fewer details than the field table) as well as the information about when and how
-it was identified and pinned/pointed.
+The identification table contains information about the types of mosquitos found
+in each subsample. 
+
+* metadata about the subsampling event, includes:
+  + `plotID`: label of where a sample was collected
+  + `setDate`: when traps were set
+  + `collectDate`: the date of trap collection
+  + `sampleID`: unique label of sample collection events
+  + `subsampleID`: Unique label of subsampling collection events
+  + `individualCount`: The number of each species found in a subsample
+  + `scientificName`: The Scientific name of each species found in a subsample
+
+* metadata about the quality of the data 
+
+The identification table contains information about all mosquitos that were found
+in each subsample. Each sample in the identification dataset contains the target
+taxa and once identified is either directly archived, or first sent to an external
+lab for Pathogen testing. 
+
+### Taxonomy Data Table
+
+```{r field-table}
+#read in data
+taxonomy = read.csv("~/mosquito-intern/resources/mosquito_taxonomy.csv")
+
+str(taxonomy)
+```
+
+This table contains information about mosquito taxonomy as well as the native
+status of each mosquito species in the data frame.
+
+* metadata about the subsampling event, includes:
+  + `scientificName`: the Scientific name of each species found in a subsample
+  + `d##NativeStatusCode`: an indicator of whether a species is native to 
+     each domain
+     
+SHOULD I ALSO ADD IN THE DOMAIN, PRECIP, AND TEMP TABLES HERE?
+
+HOW SHOULD I TALK ABOUT THE SOURCE FUNCTION
+
+
+#Cleaning the Data
+
+###Obtaining location information
+
+Before we can begin analyzing our data frames, we need to create a few new 
+variables and collect all the information we need into certain dataframes.
+To start, we will be extracting latitude and longitude information from NEON's
+application programming interfaces. 
+
+```{r}
+# Create a vector of unique plotIDs from the trap dataframe to speed up the data scraping process
+uniquePlotIDs <- unique(trap$plotID)
+
+## use the lapply() to create a list where each element is a single plotID with GPS data
+latlon <- lapply(uniquePlotIDs, get_NEON_location, output="latlon")
+```
+
+Once we have the vector of unique plot IDs, we then use the lapply command to go
+through each element of uniquePlotIDs, apply the get_NEON_location function, and
+return a list of unique plot IDs paired with its corresponding GPS information.
 
 
 ### IDs to Connect Tables
