@@ -46,18 +46,16 @@ if(!exists('repo_location')){stop('Set the location of the neon_data repository.
 
 
 #Read in file  
-NEONmap = readOGR(paste('mosquito-intern/resources/spatial files/NEON-domain-map/NEON_Domains.shp', sep='/'))
+NEONmap = readShapePoly(paste(repo_location, 'resources/spatial files/NEON-domain-map/NEON_Domains.shp', sep='/'))
 # Manipulate for plotting
 NEONmap@data$id = rownames(NEONmap@data)
 NEONmap.points = fortify(NEONmap, region="id")
 NEONmap.df = join(NEONmap.points, NEONmap@data, by="id")
-NEONmap@data$id = rownames(NEONmap@data)
-NEONmap.points = fortify(NEONmap, region="id")
-NEONmap.df = join(NEONmap.points, NEONmap@data, by="id")
+
 
 # make the plot, allows for multiple df use
 q <- ggplot()+
-  geom_polygon(data = NEONmap.df, aes(long, lat, group=group))+
+  geom_polygon(data = NEONmap.df, aes(long, lat, group=group,fill=DomainName))+
   geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')
 
-
+plot(q)
