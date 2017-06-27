@@ -13,6 +13,9 @@ library(tidyverse)
 library(mosaic)
 library(car)
 library(plyr)
+library(zoo)
+library(lubridate)
+
 
 trap = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_trapping_in.csv')
 sort = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_sorting_in.csv')
@@ -124,12 +127,20 @@ id$sampleMultiplier <- ifelse(id$sampleMultiplier==Inf, NA, id$sampleMultiplier)
 #Creation of New individual Count with Multiplier
 id$newindividualCount <-ifelse(is.na(id$sampleMultiplier)==F, round(id$individualCount*id$sampleMultiplier), NA)
 
+#Merge with taxonomy df for taxson rank
+id <- merge( x = taxonomy[,c("scientificName", "taxonRank")], y = id, by.x = "scientificName", by.y = "scientificName")
+
+id <- dplyr::filter(id, id$taxonRank %in% c("subspecies","species"))
+
 #Year subsets
 id2012<-id[id$Year==2012,]
 id2013<-id[id$Year==2013,]
 id2014<-id[id$Year==2014,]
 id2015<-id[id$Year==2015,]
 id2016<-id[id$Year==2016,]
+
+#smalle subset only containing 2014 and 2016
+idsmall<-dplyr::filter(id, id$Year %in% c(2014,2016))
 
 ```
 
@@ -140,8 +151,7 @@ id2016<-id[id$Year==2016,]
 #If I merge dataframes then it automatically removes the null plot ID
 
 #Creation of a dataframe that maps plotIds to number of unique scientific names
-specrich <- ddply(id, ~ uniquePlotIDs + collectDate + Year + HoursOfTrapping + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
-
+specrich <- ddply(idsmall, ~ uniquePlotIDs + collectDate + Year + HoursOfTrapping + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
 
 #Merging to get lat2 lon2 data
 specrich <- merge(x = uniquetrap, y = specrich, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
@@ -149,12 +159,7 @@ specrich <- merge(x = uniquetrap, y = specrich, by.y = "uniquePlotIDs", by.x = "
 #Changin lat2 to a numeric
 specrich$lat2<-as.numeric(specrich$lat2)
 
-#Creation of Year subsets
-specrich2012 <- specrich[specrich$Year==2012,]
-specrich2013 <- specrich[specrich$Year==2013,]
-specrich2014 <- specrich[specrich$Year==2014,]
-specrich2015 <- specrich[specrich$Year==2015,]
-specrich2016 <- specrich[specrich$Year==2016,]
+specrich$collectDate<-as.yearmon(specrich$collectDate)
 
 #Preliminary graph of latitude by species richness overall
 ggplot(specrich,aes(lat2, num_species))+
@@ -162,15 +167,16 @@ ggplot(specrich,aes(lat2, num_species))+
   labs(x = "Latitude", y = "Number of Species")+
   ggtitle("Species Richness by Latitude all years")
 
-#Preliminary graph of Species Richness 
+#Preliminary graph of Species Richness vs. maximum temp
 ggplot(specrich, aes(Max.TempC, num_species))+
   geom_point(aes(colour = num_species))+
   labs(x = "Maximum Temperature", y = "Number of Species")+
   ggtitle("Species Richness by Maximum Temperature")
 
 #Preliminary graph of Species Richness vs. Time for 2016
-ggplot(specrich2016, aes(as.Date(collectDate), num_species))+
-  geom_point(aes(colour = num_species))+
+ggplot(specrich, aes(month(collectDate, label=TRUE, abbr=TRUE), 
+                value, group=factor(year(collectDate)), colour=factor(year(collectDate)))) +
+  geom_point(aes(colour = Year))+
   labs(x = "Date of Collection", y = "Number of Species")+
   ggtitle("Species Richness vs. Time for 2016")
 
@@ -178,15 +184,15 @@ ggplot(specrich2016, aes(as.Date(collectDate), num_species))+
 
 #Preliminary graph of Temp by latitude
 ggplot(specrich, aes(lat2, Max.TempC)) +
-  geom_point(aes(colour = num_species)) +
-  labs(x = "Latitude", y = "Precipitation in mm") +
-  ggtitle("Precipitation vs. Latitude Overall")
+  geom_point(aes(colour = Year)) +
+  labs(x = "Latitude", y = "Temperature in Celsius") +
+  ggtitle("Maximum Temperature vs. Latitude Overall")
 
 #Preliminary graph of maximum temp versus date for 2016
-ggplot(specrich2016, aes(as.Date(collectDate), Max.TempC))+
-  geom_point(aes(colour = num_species))+
-  labs(x = "Date of Collection", y = "Maximum Temperature")+
-  ggtitle("Maximum Temperature in Celsius vs. Date of Collection")
+# ggplot(specrich, aes(as.Date(MonthDay), Max.TempC))+
+#   geom_point(aes(colour = Year))+
+#   labs(x = "Date of Collection", y = "Maximum Temperature")+
+#   ggtitle("Maximum Temperature in Celsius vs. Date of Collection")
 
 #From these graphs establish some sort of relationship between variables use to build models
 
@@ -242,7 +248,6 @@ albo2016<- id2016[grepl("Aedes albopictus", id2016$scientificName),]
 
 #ex of previous code
 #albo <- id[id$scientificName=="Aedes albopictus",]
-
 
 length(unique(albo2014$uniquePlotIDs)) #18
 length(unique(albo2015$uniquePlotIDs)) #9
