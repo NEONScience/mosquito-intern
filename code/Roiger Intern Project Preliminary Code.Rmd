@@ -11,6 +11,7 @@ output:
 # install.packages('tidyverse')
 library(tidyverse)
 library(mosaic)
+library(car)
 library(plyr)
 
 trap = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_trapping_in.csv')
@@ -78,7 +79,7 @@ id <- rbind(id,new_trap)
 id$Year<-substr(id$collectDate,1,4)
 
 #Chaning year to be a factor rather than a character
-id$Year<-as.factor(id$Year)
+id$Year<-as.Date(id$Year)
 
 #Exctracting date information for id
 id$Date<-substr(id$setDate,1,10)
@@ -139,14 +140,14 @@ id2016<-id[id$Year==2016,]
 #If I merge dataframes then it automatically removes the null plot ID
 
 #Creation of a dataframe that maps plotIds to number of unique scientific names
-specrich <- ddply(id, ~ uniquePlotIDs + collectDate + Year + Timediff + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
+specrich <- ddply(id, ~ uniquePlotIDs + collectDate + Year + HoursOfTrapping + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
 
 
 #Merging to get lat2 lon2 data
 specrich <- merge(x = uniquetrap, y = specrich, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
 
-#Changin year to a factor
-specrich$Year<-as.factor(specrich$Year)
+#Changin lat2 to a numeric
+specrich$lat2<-as.numeric(specrich$lat2)
 
 #Creation of Year subsets
 specrich2012 <- specrich[specrich$Year==2012,]
@@ -155,7 +156,64 @@ specrich2014 <- specrich[specrich$Year==2014,]
 specrich2015 <- specrich[specrich$Year==2015,]
 specrich2016 <- specrich[specrich$Year==2016,]
 
+#Preliminary graph of latitude by species richness overall
+ggplot(specrich,aes(lat2, num_species))+
+  geom_point(aes(colour = num_species))+
+  labs(x = "Latitude", y = "Number of Species")+
+  ggtitle("Species Richness by Latitude all years")
 
+#Preliminary graph of Species Richness 
+ggplot(specrich, aes(Max.TempC, num_species))+
+  geom_point(aes(colour = num_species))+
+  labs(x = "Maximum Temperature", y = "Number of Species")+
+  ggtitle("Species Richness by Maximum Temperature")
+
+#Preliminary graph of Species Richness vs. Time for 2016
+ggplot(specrich2016, aes(as.Date(collectDate), num_species))+
+  geom_point(aes(colour = num_species))+
+  labs(x = "Date of Collection", y = "Number of Species")+
+  ggtitle("Species Richness vs. Time for 2016")
+
+#Challenge Problem Make scatterplot of Species Richness vs. Time for other year subsets
+
+#Preliminary graph of Temp by latitude
+ggplot(specrich, aes(lat2, Max.TempC)) +
+  geom_point(aes(colour = num_species)) +
+  labs(x = "Latitude", y = "Precipitation in mm") +
+  ggtitle("Precipitation vs. Latitude Overall")
+
+#Preliminary graph of maximum temp versus date for 2016
+ggplot(specrich2016, aes(as.Date(collectDate), Max.TempC))+
+  geom_point(aes(colour = num_species))+
+  labs(x = "Date of Collection", y = "Maximum Temperature")+
+  ggtitle("Maximum Temperature in Celsius vs. Date of Collection")
+
+#From these graphs establish some sort of relationship between variables use to build models
+
+#Do I talk about model building/ model selection or jump immediately to a model
+
+#Layout assumptions for linear modeling
+#LINE acronym
+
+mod1 <- lm(num_species ~ lat2, data = specrich)
+summary(mod1)
+  
+mod2 <- lm(num_species ~ lat2 + Year, data = specrich)
+summary(mod2)
+
+mod3 <- lm(num_species ~ lat2 + Max.TempC + Year, data = specrich)
+summary(mod3)
+vif(mod3)
+
+#Deconstruction of appropriateness of linear model 
+#Linearity: Examining the scatterplot of species richness vs. lat does not appear to be linear
+#Independence: Sampling could be geographically related because of environments at plots, sites, and domains
+#Normality: Normal Q-Q plot
+#Equal Variance: Residuals Plot
+
+plot(mod3)
+
+#Conclusion: these relationships could exist but a different model is necessary
 
 ```
 
@@ -207,7 +265,7 @@ sum(complete.cases(albo2016$newindividualCount))/sum(complete.cases(id2016$newin
 
 #Create df for domain ID and native code
 
-albotax <- tidyr:: gather(taxonomy.df[grepl("Aedes albopictus", taxonomy.df$scientificName), grepl("NativeStatusCode", colnames(taxonomy.df))], "Domain ID")
+albotax <- tidyr:: gather(taxonomy[grepl("Aedes albopictus", taxonomy$scientificName), grepl("NativeStatusCode", colnames(taxonomy))], "Domain ID")
 
 albotax<-albotax[c(5:15,17:23),]
 
@@ -236,7 +294,7 @@ tars2016<- id2016[grepl("Culex tarsalis", id2016$scientificName),]
 
 #Create df for domain ID and native code
 
-tarstax <- tidyr:: gather(taxonomy.df[grepl("Culex tarsalis", taxonomy.df$scientificName), grepl("NativeStatusCode", colnames(taxonomy.df))], "Domain ID")
+tarstax <- tidyr:: gather(taxonomy[grepl("Culex tarsalis", taxonomy$scientificName), grepl("NativeStatusCode", colnames(taxonomy))], "Domain ID")
 
 tarstax<-tarstax[c(5:15,17:23),]
 
@@ -271,17 +329,9 @@ tars.firstplot <- tars[match(unique(tars$uniquePlotIDs), tars$uniquePlotIDs),]
 
 # Visualizations for domains, sites and plots where cx. tarsalis is present
 
-q + geom_point(data = tars.firstdomain, aes(lon2,lat2), color = "blue")
+# q + geom_point(data = tars.firstdomain, aes(lon2,lat2), color = "blue")
 
 ```
-
-#Abundance versus latitude
-```{r}
-
-```
-
-
-
 
 
 ############################ Working until this point ###########################################

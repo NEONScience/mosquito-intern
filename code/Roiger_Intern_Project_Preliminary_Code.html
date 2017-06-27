@@ -124,22 +124,142 @@ $(document).ready(function () {
 
 <div id="data-frame-set-up" class="section level3">
 <h3>Data Frame Set Up</h3>
+<pre class="r"><code># install.packages('tidyverse')
+library(tidyverse)
+library(mosaic)
+library(plyr)
+
+trap = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_trapping_in.csv')
+sort = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_sorting_in.csv')
+id = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_identification_in.csv')
+pathogen = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_pathogenresults_in.csv')
+taxonomy = read.csv(&quot;~/mosquito-intern/resources/mosquito_taxonomy.csv&quot;)
+precip.df = read.csv('~/mosquito-intern/resources/precipitation.csv')
+temp.df = read.csv(&quot;~/mosquito-intern/resources/temperature_maximum.csv&quot;)
+domain.df = read.csv(&quot;~/mosquito-intern/data/domainid_siteid_match.csv&quot;)
+source('~/mosquito-intern/code/get_NEON_location.R')
+
+#source('~/mosquito-intern/code/mapping_viz.R')
+# source('~/GitHub/mosquito-intern/code/get_NEON_location.R') # this is Cody's file path
+uniquePlotIDs &lt;- unique(trap$plotID)
+
+## apply get_NEON_location function to vector uniquePlotIDs, returns a list where each element is a single plotID with GPS data
+
+# st &lt;- Sys.time() # profiling start time
+latlon &lt;- lapply(uniquePlotIDs, get_NEON_location, output=&quot;latlon&quot;)
+# end &lt;- Sys.time(); end - st # profiling end time; calculate function execution duration
+
+## convert list into data.frame
+latlon.df &lt;- do.call(rbind, latlon)
+## matching the names of your columns
+names(latlon.df) &lt;- c(&quot;uniquePlotIDs&quot;, &quot;lat&quot;, &quot;lon&quot;, &quot;northing&quot;, &quot;easting&quot;, &quot;utmZone&quot;, &quot;elevation&quot;) 
+
+#Removing datapoint with lat lon listed as 1,1
+latlon.df[latlon.df==1]&lt;-NA
+
+trap$plotID&lt;-as.character(trap$plotID)
+
+#Merging trap df with lat lon data
+trap &lt;- merge(x = latlon.df, y = trap, by.x = &quot;uniquePlotIDs&quot;, by.y = &quot;plotID&quot;) #merge example
+
+#Filling in more lat lon data
+trap$lat2&lt;-ifelse(is.na(trap$lat)==TRUE, trap$pdaDecimalLatitude,trap$lat)
+trap$lon2&lt;-ifelse(is.na(trap$lon)==TRUE, trap$pdaDecimalLongitude,trap$lon)
+
+#Creating a dataframe with only the unique plotIDs and lat2 lon2 data for merging
+uniquetrap&lt;-trap[!duplicated(trap[,1]),c(&quot;uniquePlotIDs&quot;,&quot;lat2&quot;,&quot;lon2&quot;)]
+
+# Merge ID with sort
+cols = colnames(sort)[!colnames(sort)%in%colnames(id)]
+id &lt;- left_join(id, sort[, c('subsampleID', cols)], 
+                by = &quot;subsampleID&quot;)
+
+#Changing plotID from factor to character to prevent errors
+id$plotID&lt;-as.character(id$plotID)
+
+#Merging id df with lat2 lon2 data
+id &lt;- merge(x = uniquetrap, y = id, by.y = &quot;plotID&quot;, by.x = &quot;uniquePlotIDs&quot;)
+
+# Get zero traps from trapping
+new_trap&lt;- trap[!trap$sampleID %in% id$sampleID &amp; trap$targetTaxaPresent==&quot;N&quot;,]
+
+#Add columns in new_trap that weren't present in the ID table then add new_trap to ID table
+new_trap &lt;- new_trap[, colnames(new_trap)[colnames(new_trap)%in%colnames(id)]]
+
+new_trap[, colnames(id)[!colnames(id)%in%colnames(new_trap)]]&lt;-NA
+
+id &lt;- rbind(id,new_trap)
+
+#Extracting year information for id
+id$Year&lt;-substr(id$collectDate,1,4)
+
+#Chaning year to be a factor rather than a character
+id$Year&lt;-as.factor(id$Year)
+
+#Exctracting date information for id
+id$Date&lt;-substr(id$setDate,1,10)
+
+#Broad Site ID variable CHANGE TO REFLECT OTHER CODE I.E UNQUEPLOTIDS
+id$siteID&lt;-substr(id$uniquePlotIDs,1,4)
+
+#merging id with temp data
+id &lt;- merge(x = temp.df, y = id, by.y = c('siteID','Date'), by.x = c('siteID','date'), all.y = TRUE)
+
+#Converting temperature to proper value
+id$value&lt;-id$value/10
+names(id)[5]&lt;-&quot;Max.TempC&quot;
+
+#Merge id with precip data
+id &lt;- merge(x = precip.df[,c(1,4,9)], y = id, by.y = c('siteID', 'date'), by.x = c('siteID', 'date'), all.y = TRUE)
+
+#converting temperature to proper value and renaming
+id$value&lt;-id$value/10
+names(id)[3]&lt;-&quot;Precipmm&quot;
+
+#Merge with domain info.
+id &lt;- merge(x = domain.df, y = id, by.y = &quot;siteID&quot;, by.x = &quot;siteid&quot;, all.y = TRUE)
+id$domainid &lt;- as.character(id$domainid)
+
+#Working on time difference offset variable
+
+#Checks to see if all obs are on the same day or two different days and nothing else
+tally(substr(id$setDate,9,10)==substr(id$collectDate,9,10))</code></pre>
 <pre><code>## X
 ##  TRUE FALSE 
 ## 11652 42971</code></pre>
+<pre class="r"><code>tally(substr(id$setDate,9,10)!=substr(id$collectDate,9,10))</code></pre>
 <pre><code>## X
 ##  TRUE FALSE 
 ## 42971 11652</code></pre>
+<pre class="r"><code>#Variable that contains the time difference between set and collection in hours
+id$HoursOfTrapping&lt;-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate[8],15,16))/60)+(as.numeric(substr(id$setDate[8],12,13)))))
+
+#Changing Time diff to numeric
+id$HoursOfTrapping &lt;- abs(as.numeric(id$HoursOfTrapping))
+
+#Creation of sample Multiplier
+id$sampleMultiplier &lt;- ifelse(is.na(id$bycatchWeight)==F,id$totalWeight/(id$subsampleWeight-id$bycatchWeight), NA)
+id$sampleMultiplier &lt;- ifelse(id$sampleMultiplier==Inf, NA, id$sampleMultiplier)
+
+#Creation of New individual Count with Multiplier
+id$newindividualCount &lt;-ifelse(is.na(id$sampleMultiplier)==F, round(id$individualCount*id$sampleMultiplier), NA)
+
+#Year subsets
+id2012&lt;-id[id$Year==2012,]
+id2013&lt;-id[id$Year==2013,]
+id2014&lt;-id[id$Year==2014,]
+id2015&lt;-id[id$Year==2015,]
+id2016&lt;-id[id$Year==2016,]</code></pre>
 </div>
 <div id="species-richness-vignette" class="section level3">
 <h3>Species Richness Vignette</h3>
 <pre class="r"><code>#If I merge dataframes then it automatically removes the null plot ID
 
 #Creation of a dataframe that maps plotIds to number of unique scientific names
-specrich &lt;- ddply(id, ~ uniquePlotIDs + collectDate + Year + Timediff + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
+specrich &lt;- ddply(id, ~ uniquePlotIDs + collectDate + Year + HoursOfTrapping + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
 
-# 
-# #Merging to get lat2 lon2 data
+
+#Merging to get lat2 lon2 data
 specrich &lt;- merge(x = uniquetrap, y = specrich, by.y = &quot;uniquePlotIDs&quot;, by.x = &quot;uniquePlotIDs&quot;)
 
 #Changin year to a factor
@@ -342,7 +462,7 @@ sum(complete.cases(albo2014$newindividualCount))/sum(complete.cases(id2014$newin
 
 #Create df for domain ID and native code
 
-albotax &lt;- tidyr:: gather(taxonomy.df[grepl(&quot;Aedes albopictus&quot;, taxonomy.df$scientificName), grepl(&quot;NativeStatusCode&quot;, colnames(taxonomy.df))], &quot;Domain ID&quot;)</code></pre>
+albotax &lt;- tidyr:: gather(taxonomy[grepl(&quot;Aedes albopictus&quot;, taxonomy$scientificName), grepl(&quot;NativeStatusCode&quot;, colnames(taxonomy))], &quot;Domain ID&quot;)</code></pre>
 <pre><code>## Warning: attributes are not identical across measure variables; they will
 ## be dropped</code></pre>
 <pre class="r"><code>albotax&lt;-albotax[c(5:15,17:23),]
@@ -379,7 +499,7 @@ tars2016&lt;- id2016[grepl(&quot;Culex tarsalis&quot;, id2016$scientificName),]
 
 #Create df for domain ID and native code
 
-tarstax &lt;- tidyr:: gather(taxonomy.df[grepl(&quot;Culex tarsalis&quot;, taxonomy.df$scientificName), grepl(&quot;NativeStatusCode&quot;, colnames(taxonomy.df))], &quot;Domain ID&quot;)</code></pre>
+tarstax &lt;- tidyr:: gather(taxonomy[grepl(&quot;Culex tarsalis&quot;, taxonomy$scientificName), grepl(&quot;NativeStatusCode&quot;, colnames(taxonomy))], &quot;Domain ID&quot;)</code></pre>
 <pre><code>## Warning: attributes are not identical across measure variables; they will
 ## be dropped</code></pre>
 <pre class="r"><code>tarstax&lt;-tarstax[c(5:15,17:23),]
@@ -389,6 +509,8 @@ tarstax.df &lt;-data.frame(&quot;domainID&quot;= unique(domain.df$domainid), &qu
 #Merge Cu. tarsalis taxonomy df with tars df
 tars &lt;- merge(x = tarstax.df, y = tars, by.x = &quot;domainID&quot;, by.y = &quot;domainid&quot;)
 
+tars$lat2&lt;- as.numeric(tars$lat2)
+tars$lon2&lt;- as.numeric(tars$lon2)
 #number of sites of appearance
 length(unique(tars$uniquePlotIDs)) #160</code></pre>
 <pre><code>## [1] 160</code></pre>
@@ -415,10 +537,16 @@ sum(complete.cases(tars2013$newindividualCount))/sum(complete.cases(id2013$newin
 <pre class="r"><code>#Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
 tars.firstdomain &lt;- tars[match(unique(tars$domainID), tars$domainID),]
 tars.firstsite &lt;- tars[match(unique(tars$siteid), tars$siteid),]
-tars.firstplot &lt;- tars[match(unique(tars$uniquePlotIDs), tars$uniquePlotIDs),]</code></pre>
+tars.firstplot &lt;- tars[match(unique(tars$uniquePlotIDs), tars$uniquePlotIDs),]
+
+# Visualizations for domains, sites and plots where cx. tarsalis is present
+
+# q + geom_point(data = tars.firstdomain, aes(lon2,lat2), color = &quot;blue&quot;)</code></pre>
+</div>
+<div id="abundance-versus-latitude" class="section level1">
+<h1>Abundance versus latitude</h1>
 <div id="working-until-this-point" class="section level28">
 <p>Working until this point</p>
-</div>
 </div>
 <div id="graphs-and-visualizations" class="section level3">
 <h3>Graphs and Visualizations</h3>
@@ -623,6 +751,7 @@ tars.firstplot &lt;- tars[match(unique(tars$uniquePlotIDs), tars$uniquePlotIDs),
 # Latonly2.mll &lt;- lmer(num_species ~ lat2 * Timediff + (Timediff|uniquePlotIDs), REML = F, data = specrich)
 
 # anova(Latonly.mll, Latonly2.mll)</code></pre>
+</div>
 </div>
 
 
