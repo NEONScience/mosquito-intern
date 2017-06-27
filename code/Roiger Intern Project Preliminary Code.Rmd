@@ -79,7 +79,7 @@ id <- rbind(id,new_trap)
 id$Year<-substr(id$collectDate,1,4)
 
 #Chaning year to be a factor rather than a character
-id$Year<-as.Date(id$Year)
+id$Year<-as.factor(id$Year)
 
 #Exctracting date information for id
 id$Date<-substr(id$setDate,1,10)
