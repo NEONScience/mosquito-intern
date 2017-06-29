@@ -321,10 +321,10 @@ plot2014 <-ggplot(tars2014, aes(as.numeric(lat2), as.Date(date)))+
   ggtitle("Date versus Latitude for 2014")
 
 
-
+tally(tarssmall$Year)
 grid.arrange(plot2014, plot2016)
 
-# q + geom_point(data = tars.firstdomain, aes(lon2,lat2), color = "blue")
+# gg + geom_polygon(data = tars.firstdomain, aes(lon2,lat2, fill = domainID))
 
 ```
 

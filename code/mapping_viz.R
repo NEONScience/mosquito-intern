@@ -45,17 +45,30 @@ if(!exists('repo_location')){stop('Set the location of the neon_data repository.
 # Read blog post here: https://github.com/tidyverse/ggplot2/wiki/plotting-polygon-shapefiles
 
 
+
 #Read in file  
 NEONmap = readShapePoly(paste(repo_location, 'resources/spatial files/NEON-domain-map/NEON_Domains.shp', sep='/'))
 # Manipulate for plotting
 NEONmap@data$id = rownames(NEONmap@data)
 NEONmap.points = fortify(NEONmap, region="id")
 NEONmap.df = join(NEONmap.points, NEONmap@data, by="id")
+NEONmap.df$id<-ifelse(nchar(NEONmap.df$id)<2, paste("D0",NEONmap.df$id, sep=""), paste("D",NEONmap.df$id, sep=""))
 
+# labelnames <- aggregate(cbind(long, lat) ~ DomainName, data=NEONmap.df, FUN=function(x)mean(range(x)))
+# labelnames[grepl("Tundra",labelnames$DomainName),"lat"] <-69
+# labelnames[grepl("Taiga",labelnames$DomainName),"lat"] <-64
+# labelnames[grepl("Pacific Northwest",labelnames$DomainName),c("long","lat")] <-c(-130,60.5)
 
 # make the plot, allows for multiple df use
 q <- ggplot()+
   geom_polygon(data = NEONmap.df, aes(long, lat, group=group,fill=DomainName))+
+  # geom_text(data= labelnames, aes(long, lat, label = DomainName), size=2) +
+  guides(fill=FALSE)+
   geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')
 
 plot(q)
+
+gg <- ggplot()+
+  geom_polygon(data = NEONmap.df, aes(long, lat, group=group), fill = 'white')+
+  geom_path(data = NEONmap.df, aes(long, lat, group = group), color = 'black')
+gg
