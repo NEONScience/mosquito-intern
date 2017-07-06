@@ -32,7 +32,8 @@ get_NEON_location <- function(namedLocation = NULL, output = NULL){
                    'northing' = NA,
                    'easting' = NA,
                    'utmZone' = NA,
-                   'elevation' = NA
+                   'elevation' = NA,
+                   'ncldClass' = NA
                    )
   if(output == 'latlon'){
     if(request$status_code==200){
@@ -49,7 +50,13 @@ get_NEON_location <- function(namedLocation = NULL, output = NULL){
                      'utmZone' = ifelse(is.null(content$data$locationUtmZone),
                                         '',content$data$locationUtmZone),
                      'elevation' = ifelse(is.null(content$data$locationElevation),
-                                          '',content$data$locationElevation)
+                                          '',content$data$locationElevation),
+                     'ncldClass' = ifelse(!"Value for National Land Cover Database (2001)"%in%
+                                            content$data$locationProperties$locationPropertyName,
+                                          '',content$data$locationProperties$locationPropertyValue[
+                                            grepl('National Land Cover Database',
+                                                  content$data$locationProperties$locationPropertyName)
+                                          ])
                      )
       #print(namedLocation)
       return(con)    
