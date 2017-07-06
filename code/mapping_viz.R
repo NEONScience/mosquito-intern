@@ -21,8 +21,8 @@ require("plyr")
 
 
 # My working directory
-if(file.exists('~/mosquito-intern')){ # Charlotte's path
-  repo_location = '~/mosquito-intern'
+if(file.exists('~/GitHub/mosquito-intern')){ # Charlotte's path
+  repo_location = '~/GitHub/mosquito-intern'
 }
 if(file.exists('~/GitHub/mosquito-intern')){
   repo_location = '~/GitHub/mosquito-intern'
@@ -52,23 +52,26 @@ NEONmap = readShapePoly(paste(repo_location, 'resources/spatial files/NEON-domai
 NEONmap@data$id = rownames(NEONmap@data)
 NEONmap.points = fortify(NEONmap, region="id")
 NEONmap.df = join(NEONmap.points, NEONmap@data, by="id")
-NEONmap.df$id<-ifelse(nchar(NEONmap.df$id)<2, paste("D0",NEONmap.df$id, sep=""), paste("D",NEONmap.df$id, sep=""))
+NEONmap.df$DomainID<-as.character(NEONmap.df$DomainID)
+NEONmap.df$nativestat<-ifelse(NEONmap.df$DomainID %in% c(1,2,3,5:17),1,0)
+# NEONmap.df$DomainIDnew<-ifelse(nchar(NEONmap.df$DomainID) < 2, paste('D0', NEONmap.df$DomainID, sep=""), paste("D",NEONmap.df$DomainID,sep=""))
 
-# labelnames <- aggregate(cbind(long, lat) ~ DomainName, data=NEONmap.df, FUN=function(x)mean(range(x)))
-# labelnames[grepl("Tundra",labelnames$DomainName),"lat"] <-69
-# labelnames[grepl("Taiga",labelnames$DomainName),"lat"] <-64
-# labelnames[grepl("Pacific Northwest",labelnames$DomainName),c("long","lat")] <-c(-130,60.5)
+# NEONmap.df <-merge(x = tarstax.df, y = NEONmap.df, by.x = "domainID", by.y = "DomainIDnew", all=T )
+
 
 # make the plot, allows for multiple df use
 q <- ggplot()+
-  geom_polygon(data = NEONmap.df, aes(long, lat, group=group,fill=DomainName))+
-  # geom_text(data= labelnames, aes(long, lat, label = DomainName), size=2) +
+  geom_polygon(data = NEONmap.df, aes(long, lat, group=group, fill= nativestat))+
   guides(fill=FALSE)+
-  geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')
+  geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')+
+  geom_point(data = tars.firstdomain, aes( lon2, lat2, frame = Year), color = 'red')+
+  labs( x = "Longitude", y ="Latitude")+
+  ggtitle("Map of where Culex tarsalis Found and Native Status")
 
-plot(q)
+gganimate(q, interval = 3, 'test.gif')
+
 
 gg <- ggplot()+
   geom_polygon(data = NEONmap.df, aes(long, lat, group=group), fill = 'white')+
   geom_path(data = NEONmap.df, aes(long, lat, group = group), color = 'black')
-gg
+

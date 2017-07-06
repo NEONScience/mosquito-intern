@@ -22,11 +22,11 @@ trap = read.csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_trappin
 sort = read.csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_sorting_in.csv')
 id = read.csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_identification_in.csv')
 pathogen = read.csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_pathogenresults_in.csv')
-taxonomy = read.csv("~/mosquito-intern/resources/mosquito_taxonomy.csv")
-precip.df = read.csv('~/mosquito-intern/resources/precipitation.csv')
-temp.df = read.csv("~/mosquito-intern/resources/temperature_maximum.csv")
-domain.df = read.csv("~/mosquito-intern/data/domainid_siteid_match.csv")
-source('~/mosquito-intern/code/get_NEON_location.R')
+taxonomy = read.csv("~/GitHub/mosquito-intern/resources/mosquito_taxonomy.csv")
+precip.df = read.csv('~/GitHub/mosquito-intern/resources/precipitation.csv')
+temp.df = read.csv("~/GitHub/mosquito-intern/resources/temperature_maximum.csv")
+domain.df = read.csv("~/GitHub/mosquito-intern/data/domainid_siteid_match.csv")
+source('~/GitHub/mosquito-intern/code/get_NEON_location.R')
 
 #source('~/mosquito-intern/code/mapping_viz.R')
 # source('~/GitHub/mosquito-intern/code/get_NEON_location.R') # this is Cody's file path
@@ -35,7 +35,11 @@ uniquePlotIDs <- unique(trap$plotID)
 ## apply get_NEON_location function to vector uniquePlotIDs, returns a list where each element is a single plotID with GPS data
 
 # st <- Sys.time() # profiling start time
+
+#Using lapply and the get_NEON_location function to get a list of location information
 latlon <- lapply(uniquePlotIDs, get_NEON_location, output="latlon")
+
+
 # end <- Sys.time(); end - st # profiling end time; calculate function execution duration
 
 ## convert list into data.frame
@@ -146,29 +150,50 @@ idsmall<-dplyr::filter(id, id$Year %in% c(2014,2016))
 #If I merge dataframes then it automatically removes the null plot ID
 
 #Creation of a dataframe that maps plotIds to number of unique scientific names
-specrich <- ddply(idsmall, ~ uniquePlotIDs + collectDate + Year + HoursOfTrapping + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
+specrich <- ddply(idsmall, ~ uniquePlotIDs + date + Year + HoursOfTrapping + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
 
 #Merging to get lat2 lon2 data
 specrich <- merge(x = uniquetrap, y = specrich, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
 
-#Changin lat2 to a numeric
+#Changin lat2 to a numeric and date to date class
 specrich$lat2<-as.numeric(specrich$lat2)
+specrich$date<-as.Date(specrich$date)
 
-specrich[specrich$num_species>30,]
-
-# specrich$collectDate<-
 
 #Preliminary graph of latitude by species richness overall
 ggplot(specrich,aes(lat2, num_species))+
   geom_point(aes(colour = Year))+
   labs(x = "Latitude", y = "Number of Species")+
-  ggtitle("Species Richness by Latitude all years")
+  ggtitle("Species Richness by Latitude")
 
-#Preliminary graph of Species Richness vs. maximum temp
+ggplot(specrich, aes( HoursOfTrapping, num_species))+
+  geom_point()+
+  labs(x = "Hours of Trapping", y = "Number of Species")+
+  ggtitle("Species Richness by Hours of Trapping")
+
+
+#Preliminary graph of latitude vs. maximum temp
+ggplot(specrich, aes(lat2, Max.TempC))+
+  geom_point(color = 'dark blue')+
+  labs(x = "Latitude", y = "Maximum Temperature in Celsius")+
+  ggtitle("Latitude by Maximum Temperature")
+
+#Preliminary graph of latitude vs. precipitation
+ggplot(specrich, aes(lat2, Precipmm))+
+  geom_point(color = 'orange')+
+  labs(x = "Latitude", y = "Precipitation in millimeters")+
+  ggtitle("Latitude by Precipitation")
+
 ggplot(specrich, aes(Max.TempC, num_species))+
-  geom_point(aes(colour = Year))+
-  labs(x = "Maximum Temperature", y = "Number of Species")+
+  geom_point(aes(color = lat2))+
+  labs(x = "Maximum Temperature in Celsius", y = "Number of Species")+
   ggtitle("Species Richness by Maximum Temperature")
+
+ggplot(specrich, aes(Precipmm, num_species))+
+  geom_point(aes(color = lat2))+
+  labs(x = "Precipitation in Millimeters", y = "Number of Species")+
+  ggtitle("Species Richness by Precipitation")
+
 
 #Preliminary graph of Species Richness vs. Time for 2016
 # ggplot(specrich, aes(month(collectDate, label=TRUE, abbr=TRUE), 
@@ -180,16 +205,46 @@ ggplot(specrich, aes(Max.TempC, num_species))+
 #Challenge Problem Make scatterplot of Species Richness vs. Time for other year subsets
 
 #Preliminary graph of Temp by latitude
-ggplot(specrich, aes(lat2, Max.TempC)) +
-  geom_point(aes(colour = Year)) +
-  labs(x = "Latitude", y = "Temperature in Celsius") +
-  ggtitle("Maximum Temperature vs. Latitude Overall")
+# testgif<-ggplot(specrich, aes(lat2, Max.TempC, frame =Year)) +
+#   geom_point(aes(colour = Year)) +
+#   labs(x = "Latitude", y = "Temperature in Celsius") +
+#   ggtitle("Maximum Temperature vs. Latitude Overall")
+# 
+# gganimate(testgif, interval = 0.5, 'output.gif')
 
 #Preliminary graph of maximum temp versus date for 2016
-# ggplot(specrich, aes(as.Date(MonthDay), Max.TempC))+
-#   geom_point(aes(colour = Year))+
-#   labs(x = "Date of Collection", y = "Maximum Temperature")+
-#   ggtitle("Maximum Temperature in Celsius vs. Date of Collection")
+M.Temp2014<-ggplot(specrich[specrich$Year==2014,], aes(date, Max.TempC))+
+  geom_point(colour = 'blue')+
+  labs(x = "Date of Collection", y = "Maximum Temperature")+
+  scale_y_continuous(limits = c(0,45))+
+  scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month", limits = as.Date(c("2014-05-01","2014-12-01")))+
+  ggtitle("Maximum Temperature in Celsius vs. Date of Collection for 2014")
+
+M.Temp2016<-ggplot(specrich[specrich$Year==2016,], aes(date, Max.TempC))+
+  geom_point(colour = 'green')+
+  labs(x = "Date of Collection", y = "Maximum Temperature")+
+  scale_y_continuous(limits = c(0,45))+
+  scale_x_date(labels = date_format("%m-%y"), date_breaks = "1 month", limits = as.Date(c("2016-05-01","2016-12-01")))+
+  ggtitle("Maximum Temperature in Celsius vs. Date of Collection for 2016")
+
+grid.arrange(M.Temp2014, M.Temp2016)
+
+######
+M.precip2014<-ggplot(specrich[specrich$Year==2014,], aes(lat2, Precipmm))+
+  geom_point(colour = 'blue')+
+  labs(x = "Date of Collection", y = "Maximum Temperature")+
+  # scale_y_continuous(limits = c(0,45))+
+  # scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month", limits = as.Date(c("2014-05-01","2014-12-01")))+
+  ggtitle("Maximum Temperature in Celsius vs. Date of Collection for 2014")
+
+M.precip2016<-ggplot(specrich[specrich$Year==2016,], aes(lat2, Precipmm))+
+  geom_point(colour = 'green')+
+  labs(x = "Date of Collection", y = "Maximum Temperature")+
+  # scale_y_continuous(limits = c(0,45))+
+  # scale_x_date(labels = date_format("%m-%y"), date_breaks = "1 month", limits = as.Date(c("2016-05-01","2016-12-01")))+
+  ggtitle("Maximum Temperature in Celsius vs. Date of Collection for 2016")
+
+grid.arrange(M.precip2014, M.precip2016)
 
 
 ```
@@ -198,61 +253,61 @@ ggplot(specrich, aes(lat2, Max.TempC)) +
 ###Julian Date of first occurence versus lat
 
 ```{r}
-#Over representation of females in ID sample
-tally(id$sex)
-
-#Table of proportions of female versus male over time
-prop.table(table(id$Year,id$sex),1)
-
-#Instances of Ae. albopictus by year
-table(id$Year,id$scientificName=="Aedes albopictus")
-
-#Number of times each species identified in id df
-# tally(id$scientificName)
-
-#Tracking number of sites where Ae. Albopictus has been identified
-albo<- id[grepl("Aedes albopictus", id$scientificName),]
-albo2014<- id2014[grepl("Aedes albopictus", id2014$scientificName),]
-albo2015<- id2015[grepl("Aedes albopictus", id2015$scientificName),]
-albo2016<- id2016[grepl("Aedes albopictus", id2016$scientificName),]
-
-#ex of previous code
-#albo <- id[id$scientificName=="Aedes albopictus",]
-
-length(unique(albo2014$uniquePlotIDs)) #18
-length(unique(albo2015$uniquePlotIDs)) #9
-length(unique(albo2016$uniquePlotIDs)) #45
-
-#Preliminary findings suggest large amount of fluctuation in number of sites, could be due to sampling procedure or changes in biotic variables at each site
-
-#Sum of Ae. albopictus for each year
-sum(na.omit(albo2014$newindividualCount)) # 69
-sum(na.omit(albo2015$newindividualCount)) # 43
-sum(na.omit(albo2016$newindividualCount)) # 433
-
-#Proportion of Ae. albopictus relative to total number collected by year
-sum(complete.cases(albo2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount))
-sum(complete.cases(albo2015$newindividualCount))/sum(complete.cases(id2015$newindividualCount))
-sum(complete.cases(albo2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))
-
-
-#Slight increase in proportion of Ae. Albopictus caught over time relative to total number of mosquitos caught exception of 2016.
-
-#Create df for domain ID and native code
-
-albotax <- tidyr:: gather(taxonomy[grepl("Aedes albopictus", taxonomy$scientificName), grepl("NativeStatusCode", colnames(taxonomy))], "Domain ID")
-
-albotax<-albotax[c(5:15,17:23),]
-
-albotax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeStatus"= albotax)
-
-#Merge Cu. tarsalis taxonomy df with albo df
-albo <- merge(x = albotax.df, y = albo, by.x = "domainID", by.y = "domainid")
-
-#Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
-albo.firstdomain <- albo[match(unique(albo$domainID), albo$domainID),]
-albo.firstsite <- albo[match(unique(albo$siteid), albo$siteid),]
-albo.firstplot <- albo[match(unique(albo$uniquePlotIDs), albo$uniquePlotIDs),]
+# #Over representation of females in ID sample
+# tally(id$sex)
+# 
+# #Table of proportions of female versus male over time
+# prop.table(table(id$Year,id$sex),1)
+# 
+# #Instances of Ae. albopictus by year
+# table(id$Year,id$scientificName=="Aedes albopictus")
+# 
+# #Number of times each species identified in id df
+# # tally(id$scientificName)
+# 
+# #Tracking number of sites where Ae. Albopictus has been identified
+# albo<- id[grepl("Aedes albopictus", id$scientificName),]
+# albo2014<- id2014[grepl("Aedes albopictus", id2014$scientificName),]
+# albo2015<- id2015[grepl("Aedes albopictus", id2015$scientificName),]
+# albo2016<- id2016[grepl("Aedes albopictus", id2016$scientificName),]
+# 
+# #ex of previous code
+# #albo <- id[id$scientificName=="Aedes albopictus",]
+# 
+# length(unique(albo2014$uniquePlotIDs)) #18
+# length(unique(albo2015$uniquePlotIDs)) #9
+# length(unique(albo2016$uniquePlotIDs)) #45
+# 
+# #Preliminary findings suggest large amount of fluctuation in number of sites, could be due to sampling procedure or changes in biotic variables at each site
+# 
+# #Sum of Ae. albopictus for each year
+# sum(na.omit(albo2014$newindividualCount)) # 69
+# sum(na.omit(albo2015$newindividualCount)) # 43
+# sum(na.omit(albo2016$newindividualCount)) # 433
+# 
+# #Proportion of Ae. albopictus relative to total number collected by year
+# sum(complete.cases(albo2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount))
+# sum(complete.cases(albo2015$newindividualCount))/sum(complete.cases(id2015$newindividualCount))
+# sum(complete.cases(albo2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))
+# 
+# 
+# #Slight increase in proportion of Ae. Albopictus caught over time relative to total number of mosquitos caught exception of 2016.
+# 
+# #Create df for domain ID and native code
+# 
+# albotax <- tidyr:: gather(taxonomy[grepl("Aedes albopictus", taxonomy$scientificName), grepl("NativeStatusCode", colnames(taxonomy))], "Domain ID")
+# 
+# albotax<-albotax[c(5:15,17:23),]
+# 
+# albotax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeStatus"= albotax)
+# 
+# #Merge Cu. tarsalis taxonomy df with albo df
+# albo <- merge(x = albotax.df, y = albo, by.x = "domainID", by.y = "domainid")
+# 
+# #Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
+# albo.firstdomain <- albo[match(unique(albo$domainID), albo$domainID),]
+# albo.firstsite <- albo[match(unique(albo$siteid), albo$siteid),]
+# albo.firstplot <- albo[match(unique(albo$uniquePlotIDs), albo$uniquePlotIDs),]
 
 ############## Culex tarsalis #########################
 
@@ -298,6 +353,9 @@ sum(complete.cases(tars2013$newindividualCount))/sum(complete.cases(id2013$newin
 sum(complete.cases(tars2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount))
 sum(complete.cases(tars2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))
 
+
+tarssmall <- tarssmall[order(as.Date(tarssmall$date)),]
+
 #Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
 tars.firstdomain <- tarssmall[match(unique(tarssmall$domainID), tarssmall$domainID),]
 tars.firstsite <- tarssmall[match(unique(tarssmall$siteid), tarssmall$siteid),]
@@ -307,24 +365,41 @@ tars.firstplot <- tarssmall[match(unique(tarssmall$uniquePlotIDs), tarssmall$uni
 tars2016$date<-as.Date(tars2016$date)
 tars2014$date<-as.Date(tars2014$date)
 
-plot2016 <-ggplot(tars2016, aes(as.numeric(lat2), as.Date(date)))+
+plot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(individualCount)))+
   geom_point(color = "darkblue")+
-  labs(x = "Latitude", y = "Date")+
-  scale_x_continuous(limits = c(30,65))+
-  scale_y_date(labels = date_format("%m-%Y"), date_breaks = "1 month")+
-  ggtitle("Date versus Latitude for 2016")
-plot2014 <-ggplot(tars2014, aes(as.numeric(lat2), as.Date(date)))+
+  labs(x = "Date", y = "Count of Culex tarsalis")+
+  scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month")+
+  ggtitle("Date versus Count of Culex tarsalis for 2016")
+plot2014 <-ggplot(tars2014, aes(as.Date(date), as.numeric(individualCount)))+
   geom_point(color = "pink")+
-  scale_x_continuous(limits = c(30,65))+
-  scale_y_date(labels = date_format("%m-%Y"), date_breaks = "1 month", limits = as.Date(c("2014-05-01","2014-11-01")))+
-  labs(x = "Latitude", y = "Date")+
-  ggtitle("Date versus Latitude for 2014")
+  scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month", limits = as.Date(c("2014-05-01","2014-11-01")))+
+  labs(x = "Date", y = "Count of Culex tarsalis")+
+  ggtitle("Date versus Count of Culex tarsalis for 2014")
 
+grid.arrange(plot2014,plot2016)
 
-tally(tarssmall$Year)
-grid.arrange(plot2014, plot2016)
+tempplot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(Max.TempC)))+
+  geom_point(color = "light green")+
+  labs(x = "Date", y = "Maximum Temperature in C")+
+  scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month")+
+  ggtitle("Date versus Maximum Temperature for 2016")
+tempplot2014 <-ggplot(tars2014, aes(as.Date(date), as.numeric(Max.TempC)))+
+  geom_point(color = "purple")+
+  scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month", limits = as.Date(c("2014-05-01","2014-11-01")))+
+  labs(x = "Date", y = "Maximum Temperature in C")+
+  ggtitle("Date versus Maximum Temperature for 2014")
 
-# gg + geom_polygon(data = tars.firstdomain, aes(lon2,lat2, fill = domainID))
+grid.arrange(tempplot2014, tempplot2016)
+
+grid.arrange(tempplot2016, plot2016)
+
+q <-ggplot(tarssmall, aes(as.numeric(lat2), as.Date(date), frame = date))+
+      geom_point(aes(color= Year))+
+      scale_y_date(labels = date_format("%m-%Y"), date_breaks = "1 month", limits = as.Date(c("2014-05-01","2016-11-01")))+
+      scale_x_continuous(limits = c(30,65))+
+      ggtitle("Date versus Latitude for 2016")
+
+# gg + geom_point(data = tars.firstdomain, aes(lon2,lat2, fill = domainID))
 
 ```
 
