@@ -64,7 +64,7 @@ q <- ggplot()+
   geom_polygon(data = NEONmap.df, aes(long, lat, group=group, fill= nativestat))+
   guides(fill=FALSE)+
   geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')+
-  geom_point(data = tars.firstdomain, aes( lon2, lat2, frame = Year), color = 'red')+
+  geom_point(data = tars.firstdomain, aes( lon2, lat2, frame = Year), color = 'red', size = 2.5)+
   labs( x = "Longitude", y ="Latitude")+
   ggtitle("Map of where Culex tarsalis Found and Native Status")
 
