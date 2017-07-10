@@ -66,7 +66,8 @@ q <- ggplot()+
   geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')+
   geom_point(data = tars.firstdomain, aes( lon2, lat2, frame = Year), color = 'red', size = 2.5)+
   labs( x = "Longitude", y ="Latitude")+
-  ggtitle("Map of where Culex tarsalis Found and Native Status")
+  ggtitle("Map of where Culex tarsalis Found and Native Status")+
+  theme(plot.title = element_text(size = 16, face = "bold"))
 
 gganimate(q, interval = 3, 'test.gif')
 

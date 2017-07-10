@@ -170,7 +170,7 @@ ggplot(specrich,aes(lat2, num_species))+
 
 #Preliminary graph of latitude vs. maximum temp
 ggplot(specrich, aes(lat2, Max.TempC))+
-  geom_point(color = 'dark blue')+
+  geom_point(color = 'dark blue', size = 2)+
   labs(x = "Latitude", y = "Maximum Temperature in Celsius")+
   ggtitle("Latitude by Maximum Temperature")
 
@@ -374,7 +374,7 @@ plot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(individualCount)))+
   scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month")+
   ggtitle("Date versus Abundance of Culex tarsalis for 2016")
 plot2014 <-ggplot(tars2014, aes(as.Date(date), as.numeric(individualCount)))+
-  geom_point(color = "pink", size = 2)+
+  geom_point(color = "dark green", size = 2)+
   scale_y_continuous(limits = c(0, 305))+
   scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month", limits = as.Date(c("2014-05-01","2014-11-01")))+
   labs(x = "Date", y = "Abundance of Culex tarsalis")+
@@ -384,7 +384,7 @@ grid.arrange(plot2014,plot2016)
 
 # Maximum temperature for 2014 and 2016
 tempplot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(Max.TempC)))+
-  geom_point(color = "light green", size = 2)+
+  geom_point(color = "red", size = 2)+
   labs(x = "Date", y = "Maximum Temperature in C")+
   scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month")+
   ggtitle("Date versus Maximum Temperature for 2016")
