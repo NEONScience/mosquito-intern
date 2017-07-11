@@ -42,8 +42,9 @@ latlon <- lapply(uniquePlotIDs, get_NEON_location, output="latlon")
 
 # end <- Sys.time(); end - st # profiling end time; calculate function execution duration
 
-## convert list into data.frame
+## Convert list into data.frame
 latlon.df <- do.call(rbind, latlon)
+
 ## matching the names of your columns
 names(latlon.df) <- c("uniquePlotIDs", "lat", "lon", "northing", "easting", "utmZone", "elevation", "NLCDclass") 
 
@@ -130,13 +131,6 @@ id$newindividualCount <-ifelse(is.na(id$sampleMultiplier)==F, round(id$individua
 id <- merge( x = taxonomy[,c("scientificName", "taxonRank")], y = id, by.x = "scientificName", by.y = "scientificName")
 
 id <- dplyr::filter(id, id$taxonRank %in% c("subspecies","species"))
-
-#Year subsets
-id2012<-id[id$Year==2012,]
-id2013<-id[id$Year==2013,]
-id2014<-id[id$Year==2014,]
-id2015<-id[id$Year==2015,]
-id2016<-id[id$Year==2016,]
 
 #smalle subset only containing 2014 and 2016
 idsmall<-dplyr::filter(id, id$Year %in% c(2014,2016))

@@ -1,12 +1,13 @@
 ---
 layout: post
-title: "Latitudinal Gradients in Mosquito Species Richness: Contributing Factors and Changes Over Time"
+title: "Methods of Exploring NEON Mosquito Data in R"
 date:  2017-06-16
 authors: [Charlotte Roiger]
 dateCreated: 2017-06-16
 lastModified: `r format(Sys.time(), "%Y-%m-%d")`
-description: "FILL IN WITH A ONE LINE DESCRIPTION OF TUTORIAL"
-image:
+description: "This is a tutorial that shows users how to clean and perform an initial analysios using NEON mosquito data."
+tags: [R]
+image: #update later
   feature: TeachingModules.jpg
   credit: A National Ecological Observatory Network (NEON) - Teaching Module
   creditlink: http://www.neonscience.org
@@ -18,35 +19,16 @@ comments: false
 
 {% include _toc.html %}
 
-To many, mosquitos are nothing more than a seasonal annoyance. However, 
-mosquitos are important for their role in the transmission of human diseases. 
-For example, the species Aedes albopictus is notable in North America for its 
-ability to spread the West Nile Virus and its association with human inhabited 
-urbanized environments (Rochlin et al. 2013). As the environment changes in 
-response to global warming, it is likely that the ranges and habits of mosquitos
-like Aedes albopictus will also change. Differences in mosquito habits over time
-could put an increased number of people at risk for contracting mosquito-borne 
-diseases, so it is important to investigate the various facets of mosquitos 
-interacting with their environments. 
+##About
+SENTENCES ADD HERE
 
-This tutorial will provide a preliminary look at three different avenues of 
-investigation. First, we will examine whether there is a relationship between 
-mosquito species richness and latitude in the United States. The latitudinal 
-diversity gradient (LDG) has been explored in other species such as shore fishes
-and African birds, but little work has been done on LDGs for mosquitos. In this 
-tutorial we will transform NEON data to construct preliminary models of mosquito
-species richness in relation to latitude. A second aspect of mosquito data under
-consideration is the Julian date of first occurrence for certain species of 
-mosquitos. In particular in this tutorial we will be examining the species Culex
-tarsalis because of their abilities to transmit diseases and their relative 
-presence in the NEON data. 
 
-**R Skill Level:** Introductory - you've got the basics of `R` down and 
-understand the general structure of tabular data.
+**R Skill Level:** Intermediate - you've got the basics of `R` down
 
 <div id="objectives" markdown="1">
 
-# Objectives
+# Goals & Objectives
+
 After completing this tutorial, you will be able to:
 
 *	Download mosquito trapping, identification, and sorting information from the 
@@ -61,9 +43,9 @@ After completing this tutorial, you will be able to:
 
 ## Things You’ll Need To Complete This Tutorial
 You will need the most current version of R and, preferably, RStudio loaded on
-your computer to complete this tutorial. Also, some previous R experience
+your computer to complete this tutorial.
 
-### Install R Packages
+### R Libraries to Install:
 
 These R packages will be used in the tutorial below. Please make sure they are 
 installed prior to starting the tutorial. 
@@ -74,6 +56,8 @@ installed prior to starting the tutorial.
 *	**plyr:** `install.packages("plyr")`
 *	**mosaic:** `install.packages("mosaic")`
 *	**metScanR:** `install.packages("metScanR")`
+
+
 
 ################################################################################################
 
@@ -120,14 +104,15 @@ tables for use with analysis.
 First, set up the R environment. 
 
 ``` {r load-data}
+
 # Load packages required for entire script. 
 library(plyr)      # move/manipulate data
 library(dplyr)     # move/manipulate data
-library(foreign)
-library(maptools)
-library(raster)
+library(foreign)   
+library(maptools)  # used for creating maps of NEON field sites
+library(raster)    # manipulate spatial data
 library(rbokeh) 
-library(rgdal)
+library(rgdal)     # manipulate and read spatial data
 library(ggplot2)   # creation of plots and visualizations
 library(tidyverse) # move/manipulate data
 library(mosaic)    # good for data exploration
@@ -147,10 +132,13 @@ options(stringsAsFactors = FALSE)
 Read in the field collection data table. 
 
 ``` {r field-table}
-# read in the data TO BE CHANGED AS PORTAL DEVELOPS
+
+#Read in the data TO BE CHANGED AS PORTAL DEVELOPS
 trap = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_trapping_in.csv')
 
-str(trap) #View the first five lines of data to get a feel for the structure
+#This command allows you to view the structure of the data
+str(trap)
+
 ```
 
 This table contains information related to:
@@ -180,10 +168,12 @@ Unique collection events have a unique `sampleID` with the format =
 
 
 ``` {r sort-table}
+
 # read in sorting TO BE CHANGED AS PORTAL DEVELOPS
 sort = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_sorting_in.csv')
 
 str(sort)
+
 ```
 
 This table contains information about weight of subsamples and weight of bycatch. 
@@ -208,11 +198,13 @@ INSERT LINK OR SOMETHING FOR SORT METADATA
 ### Identification Data Table
 
 ``` {r field-table}
+
 # read in data
 id = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_identification_in.csv')
 
 # view structure of the data
 str(id)
+
 ```
 
 The identification table contains information about the types of mosquitos found
@@ -237,10 +229,12 @@ lab for Pathogen testing.
 ### Taxonomy Data Table
 
 ```{r field-table}
+
 #read in data
-taxonomy = read.csv("~/mosquito-intern/resources/mosquito_taxonomy.csv")
+taxonomy = read.csv("~/GitHub/mosquito-intern/resources/mosquito_taxonomy.csv")
 
 str(taxonomy)
+
 ```
 
 This table contains information about mosquito taxonomy as well as the native
@@ -266,16 +260,35 @@ To start, we will be extracting latitude and longitude information from NEON's
 application programming interfaces. 
 
 ```{r}
+
 # Create a vector of unique plotIDs from the trap dataframe to speed up the data scraping process
 uniquePlotIDs <- unique(trap$plotID)
 
-## use the lapply() to create a list where each element is a single plotID with GPS data
+# Use the lapply() to create a list where each element is a single plotID with GPS data
 latlon <- lapply(uniquePlotIDs, get_NEON_location, output="latlon")
+
 ```
 
 Once we have the vector of unique plot IDs, we then use the lapply command to go
 through each element of uniquePlotIDs, apply the get_NEON_location function, and
-return a list of unique plot IDs paired with its corresponding GPS information.
+return a list of unique plot IDs paired with its corresponding location 
+information. Now we will convert our list of information into a data frame so it
+can more easily be merged with our trapping and identification data.
+
+```{r}
+
+# Convert list into a data frame with the do.call function
+latlon.df <- do.call(rbind, latlon)
+
+# Match the names of your columns in this dataframe to other dataframes
+names(latlon.df) <- c("uniquePlotIDs", "lat", "lon", "northing", "easting", "utmZone", "elevation", "NLCDclass") 
+
+#Removing datapoints with latitude or longitude listed as 1, not a viable sampling location
+latlon.df[latlon.df==1]<-NA
+
+
+```
+
 
 
 ### IDs to Connect Tables
