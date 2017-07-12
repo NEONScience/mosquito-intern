@@ -50,7 +50,9 @@ Templag <- function(siteID, date){
   return(TwoWeekAvgT)
 }
 
+tiny.df$siteid<-as.character(tiny.df$siteid)
 tiny.df<- id2016[1:6,]
+Templag('ABBY', as.numeric(2012-03-04))
 
 TwoWeekAvgMaxTemp<-mapply(Templag, tiny.df$siteid, tiny.df$date)
 
