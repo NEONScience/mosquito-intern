@@ -93,8 +93,15 @@ id$Year<-as.factor(id$Year)
 #Exctracting date information for id
 id$Date<-substr(id$collectDate,1,10)
 
-#Broad Site ID variable CHANGE TO REFLECT OTHER CODE I.E UNQUEPLOTIDS
+#Broad Site ID variable 
 id$siteID<-substr(id$uniquePlotIDs,1,4)
+
+#Change temp date type
+temp.df$date <- as.Date(temp.df$date)
+
+#Change precip date type
+precip.df$date <- as.Date(precip.df$date)
+
 
 #merging id with temp data
 id <- merge(x = temp.df, y = id, by.y = c('siteID','Date'), by.x = c('siteID','date'), all.y = TRUE)
@@ -109,7 +116,7 @@ id <- merge(x = precip.df[,c(1,4,9)], y = id, by.y = c('siteID', 'date'), by.x =
 #converting temperature to proper value and renaming
 id$value<-id$value/10
 names(id)[3]<-"Precipmm"
-
+# 
 #Merge with domain info.
 id <- merge(x = domain.df, y = id, by.y = "siteID", by.x = "siteid", all.y = TRUE)
 id$domainid <- as.character(id$domainid)
@@ -144,7 +151,7 @@ idsmall<-dplyr::filter(id, id$Year %in% c(2014,2016))
 #If I merge dataframes then it automatically removes the null plot ID
 
 #Creation of a dataframe that maps plotIds to number of unique scientific names
-specrich <- ddply(idsmall, ~ uniquePlotIDs + domainid + date + Year + HoursOfTrapping + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
+specrich <- ddply(idsmall, ~ uniquePlotIDs + domainid + siteid + date + Year + HoursOfTrapping + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
 
 #Merging to get lat2 lon2 data
 specrich <- merge(x = uniquetrap, y = specrich, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
@@ -152,6 +159,25 @@ specrich <- merge(x = uniquetrap, y = specrich, by.y = "uniquePlotIDs", by.x = "
 #Changin lat2 to a numeric and date to date class
 specrich$lat2<-as.numeric(specrich$lat2)
 specrich$date<-as.Date(specrich$date)
+
+#Two week average max temp
+
+st <- Sys.time() # profiling start time
+
+TwoWeekAvgMaxTemp<-mapply(Templag, specrich$siteid, specrich$date)
+
+end <- Sys.time(); end - st # profiling end time; calculate function execution duration
+
+specrich <- cbind(specrich, TwoWeekAvgMaxTemp)
+
+#Two week average precip
+st <- Sys.time()
+
+TwoWeekAvgMaxPrecip<-mapply(Preciplag, specrich$siteid, specrich$date)
+
+end <- Sys.time(); end-st
+
+specrich <-cbind(specrich, TwoWeekAvgMaxPrecip)
 
 #Creating a Continental indicator variable
 specrich$Continental <- ifelse(specrich$domainid %in% c('D18', 'D19'), 'Alaska', ifelse(specrich$domainid == 'D04', 'Puerto Rico', 'Continental U.S'))
@@ -174,8 +200,8 @@ ggplot(specrich, aes(lat2, Precipmm))+
   labs(x = "Latitude", y = "Precipitation in millimeters")+
   ggtitle("Latitude by Precipitation")
 
-ggplot(specrich, aes(Max.TempC, num_species))+
-  geom_point(aes(color = Continental), size = 2)+
+ggplot(specrich, aes(TwoWeekAvgMaxTemp, num_species))+
+  geom_point(aes(color = Continental))+
   labs(x = "Maximum Temperature in Celsius", y = "Number of Species")+
   ggtitle("Species Richness by Maximum Temperature")
 

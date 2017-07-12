@@ -45,18 +45,37 @@ presence in the NEON data.
 Templag <- function(siteID, date){
   date <- as.Date(date)
   filter1 <- temp.df[grepl(siteID, temp.df$siteID),]
-  filter2 <- filter1[filter1$date > date - 14 & filter1$date < date + 1,]
+  filter2 <- filter1[filter1$date >= date - 14 & filter1$date < date + 1,]
   TwoWeekAvgT <- mean(filter2$value)/10
   return(TwoWeekAvgT)
 }
+temp.df$date <- as.Date(temp.df$date)
 
-tiny.df$siteid<-as.character(tiny.df$siteid)
-tiny.df<- id2016[1:6,]
-Templag('ABBY', as.numeric(2012-03-04))
+tiny.df <-idsmall[1:6,]
 
-TwoWeekAvgMaxTemp<-mapply(Templag, tiny.df$siteid, tiny.df$date)
+Templag('ABBY', '2012-01-20')
+
+TwoWeekAvgMaxTemp<-mapply(Templag, tiny.df$siteID, tiny.df$Date)
 
 tiny.df<-cbind(tiny.df, TwoWeekAvgMaxTemp)
 
+HARV.df<-temp.df[grepl('HARV', temp.df$siteID),]
+
+```
+
+```{r}
+Preciplag <- function(siteID, date){
+  date <- as.Date(date)
+  filter1 <- precip.df[grepl(siteID, precip.df$siteID),]
+  filter2 <- filter1[filter1$date >= date - 14 & filter1$date < date + 1,]
+  TwoWeekAvgP <- mean(filter2$value)/10
+  return(TwoWeekAvgP)
+}
+
+precip.df$date<-as.Date(precip.df$date)
+Preciplag('ABBY', '2012-01-20')
+
+TwoWeekAvgMaxPrecip<-mapply(Preciplag, tiny.df$siteID, tiny.df$Date)
+tiny.df <-cbind(tiny.df, TwoWeekAvgMaxPrecip)
 ```
 
