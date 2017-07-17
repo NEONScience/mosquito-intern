@@ -32,3 +32,14 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 .Rproj.user
+
+# don't publish any results or data until ready
+*.html
+*.pdf
+*.png
+*.bmp
+*.jpg
+*.jpeg
+*.gif
+*.csv
+

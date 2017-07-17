@@ -60,16 +60,14 @@ trap <- merge(x = latlon.df, y = trap, by.x = "uniquePlotIDs", by.y = "plotID") 
 trap$lat2<-ifelse(is.na(trap$lat)==TRUE, trap$pdaDecimalLatitude,trap$lat)
 trap$lon2<-ifelse(is.na(trap$lon)==TRUE, trap$pdaDecimalLongitude,trap$lon)
 
-#Creating a dataframe with only the unique plotIDs and lat2 lon2 data for merging
-uniquetrap<-trap[!duplicated(trap[,1]),c("uniquePlotIDs","lat2","lon2", "elevation","NLCDclass")]
 
 # Merge ID with sort
 cols = colnames(sort)[!colnames(sort)%in%colnames(id)]
 id <- left_join(id, sort[, c('subsampleID', cols)], 
                 by = "subsampleID")
 
-#Changing plotID from factor to character to prevent errors
-id$plotID<-as.character(id$plotID)
+#Creating a dataframe with only the unique plotIDs and lat2 lon2 data for merging
+uniquetrap<-trap[!duplicated(trap[,1]),c("uniquePlotIDs","lat2","lon2", "elevation","NLCDclass")]
 
 #Merging id df with lat2 lon2 data
 id <- merge(x = uniquetrap, y = id, by.y = "plotID", by.x = "uniquePlotIDs", all.y = TRUE)
@@ -164,18 +162,20 @@ specrich$date<-as.Date(specrich$date)
 
 st <- Sys.time() # profiling start time
 
+#debug(Templag)
 TwoWeekAvgMaxTemp<-mapply(Templag, specrich$siteid, specrich$date)
+#undebug(Templag)
 
 end <- Sys.time(); end - st # profiling end time; calculate function execution duration
 
 specrich <- cbind(specrich, TwoWeekAvgMaxTemp)
 
 #Two week average precip
-st <- Sys.time()
+# st <- Sys.time()
 
 TwoWeekAvgMaxPrecip<-mapply(Preciplag, specrich$siteid, specrich$date)
 
-end <- Sys.time(); end-st
+# end <- Sys.time(); end-st
 
 specrich <-cbind(specrich, TwoWeekAvgMaxPrecip)
 
@@ -336,9 +336,8 @@ table(id$Year, id$scientificName=="Culex tarsalis")
 #Tracking number of sites where Cu. tarsalis has been identified
 tars<- id[grepl("Culex tarsalis", id$scientificName),]
 tarssmall <- tars[tars$Year %in% c(2014,2016), ]
-tars2013<- id2013[grepl("Culex tarsalis", id2013$scientificName),]
-tars2014<- id2014[grepl("Culex tarsalis", id2014$scientificName),]
-tars2016<- id2016[grepl("Culex tarsalis", id2016$scientificName),]
+tars2014 <- tarssmall[tarssmall$Year==2014,]
+tars2016 <- tarssmall[tarssmall$Year==2016,]
 
 #Examples of tars<- id[id$scientificName=="Culex tarsalis",]
 
@@ -355,6 +354,10 @@ tarssmall <- merge(x = tarstax.df, y = tarssmall, by.x = "domainID", by.y = "dom
 
 tarssmall$lat2<- as.numeric(tarssmall$lat2)
 tarssmall$lon2<- as.numeric(tarssmall$lon2)
+
+tarssmall$TwoWeekAverageT<- mapply(Templag, tarssmall$siteid, tarssmall$date)
+
+tarssmall$TwoWeekAveragePrecip<-mapply(Preciplag, tarssmall$siteid, tarssmall$date)
 
 #number of sites of appearance
 length(unique(tars$uniquePlotIDs)) #160
@@ -403,7 +406,7 @@ plot2014 <-ggplot(tars2014, aes(as.Date(date), as.numeric(individualCount)))+
 grid.arrange(plot2014,plot2016)
 
 # Maximum temperature for 2014 and 2016
-tempplot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(Max.TempC)))+
+tempplot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(TwoWeekAverageT)))+
   geom_point(color = "red", size = 2)+
   labs(x = "Date", y = "Maximum Temperature in C")+
   scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month")+

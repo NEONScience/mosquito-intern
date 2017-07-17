@@ -27,6 +27,13 @@ mosquitos. In particular in this tutorial we will be examining the species Culex
 tarsalis because of their abilities to transmit diseases and their relative 
 presence in the NEON data. 
 
+######################################################
+
+In this tutorial we want to explore the
+abundance of *Culex tarsalis*, but in the identification data table we are only
+given the individual count of mosquito species found in each subsample.
+
+
 ```{r}
 # Katie LeVan: 
 # temp.df$date[temp.df$date > early & temp.df$date <late]

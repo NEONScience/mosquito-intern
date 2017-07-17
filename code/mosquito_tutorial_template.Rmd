@@ -103,7 +103,7 @@ tables for use with analysis.
 
 First, set up the R environment. 
 
-``` {r load-data}
+``` {r load-libraries}
 
 # Load packages required for entire script. 
 library(plyr)      # move/manipulate data
@@ -131,10 +131,13 @@ options(stringsAsFactors = FALSE)
 
 Read in the field collection data table. 
 
-``` {r field-table}
+``` {r trapping-table}
 
 #Read in the data TO BE CHANGED AS PORTAL DEVELOPS
 trap = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_trapping_in.csv')
+
+# set strings as factors as false throughout
+options(stringsAsFactors = FALSE) 
 
 #This command allows you to view the structure of the data
 str(trap)
@@ -172,6 +175,9 @@ Unique collection events have a unique `sampleID` with the format =
 # read in sorting TO BE CHANGED AS PORTAL DEVELOPS
 sort = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_sorting_in.csv')
 
+# set strings as factors as false throughout
+options(stringsAsFactors = FALSE) 
+
 str(sort)
 
 ```
@@ -197,10 +203,13 @@ INSERT LINK OR SOMETHING FOR SORT METADATA
 
 ### Identification Data Table
 
-``` {r field-table}
+``` {r identification-table}
 
 # read in data
 id = read.csv('N:/Science/FSU/Intern Projects/2107_CharlotteRoiger/mos_identification_in.csv')
+
+# set strings as factors as false throughout
+options(stringsAsFactors = FALSE) 
 
 # view structure of the data
 str(id)
@@ -228,10 +237,13 @@ lab for Pathogen testing.
 
 ### Taxonomy Data Table
 
-```{r field-table}
+```{r taxonomy-table}
 
 #read in data
 taxonomy = read.csv("~/GitHub/mosquito-intern/resources/mosquito_taxonomy.csv")
+
+# set strings as factors as false throughout
+options(stringsAsFactors = FALSE) 
 
 str(taxonomy)
 
@@ -272,8 +284,7 @@ latlon <- lapply(uniquePlotIDs, get_NEON_location, output="latlon")
 Once we have the vector of unique plot IDs, we then use the lapply command to go
 through each element of uniquePlotIDs, apply the get_NEON_location function, and
 return a list of unique plot IDs paired with its corresponding location 
-information. Now we will convert our list of information into a data frame so it
-can more easily be merged with our trapping and identification data.
+information.
 
 ```{r}
 
@@ -283,10 +294,95 @@ latlon.df <- do.call(rbind, latlon)
 # Match the names of your columns in this dataframe to other dataframes
 names(latlon.df) <- c("uniquePlotIDs", "lat", "lon", "northing", "easting", "utmZone", "elevation", "NLCDclass") 
 
-#Removing datapoints with latitude or longitude listed as 1, not a viable sampling location
+# Removing datapoints with latitude or longitude listed as 1, not a viable sampling location
 latlon.df[latlon.df==1]<-NA
 
 
+```
+
+Next we need to put together the location and plot identification information 
+with our trapping data. To achieve this goal, we will use the merge command to 
+match each plot ID in our latlon data frame to a plot ID in the trap data set.
+The merge command allows users to match rows of separate dataframes by certain
+key variables (in this case by plot ID) to create one unified data frame. For 
+more information on the merge function, please see INSERT WEBSITE
+
+```{r}
+
+# Merging trap data with latitude and  longitude data
+trap <- merge(x = latlon.df, y = trap, by.x = "uniquePlotIDs", by.y = "plotID") 
+
+```
+
+Once we are done merging our two data frames, we might notice that there is
+still a lot of missing latitude and longitude information (NEED TO INCLUDE WHY
+THIS IS???) However for some rows in our trapping dataset the variables
+pdaDecimalLatitude and pdaDecimalLongitude have location information that was
+not present in our latlon data frame. So we use an if-else statement to collect
+all of our latitude and longitude information into two more complete variables.
+
+```{r}
+
+# Filling in more latitude and longitude data
+trap$lat2<-ifelse(is.na(trap$lat)==TRUE, trap$pdaDecimalLatitude,trap$lat)
+
+trap$lon2<-ifelse(is.na(trap$lon)==TRUE, trap$pdaDecimalLongitude,trap$lon)
+
+```
+
+The next step in our data cleaning process is to consolidate all of the 
+information stored in the trapping, identification, and sorting data frames. 
+A lot of the information in the sorting data frame is very similar to what is
+found in the identification data frame. One key difference is that the sorting
+data frame also contains the weight of the subsample, the weight of the bycatch,
+and the total weight of the sample. 
+
+```{r}
+
+# Create a vector of column names that are in sort but not in id
+cols = colnames(sort)[!colnames(sort)%in%colnames(id)]
+
+# Merge 
+id <- left_join(id, sort[, c('subsampleID', cols)], 
+                by = "subsampleID")
+
+```
+
+If we want to then merge our id data frame with the information in trap, we 
+first have to simplify the trap data to lower processing times. We do that by
+selecting only the rows of our trap data frame that are unique, and omitting any
+rows that have repeated Plot IDs. 
+
+```{r}
+
+#Creating a dataframe with only the unique plotIDs and lat2 lon2 data for merging
+uniquetrap<-trap[!duplicated(trap[,1]),c("uniquePlotIDs","lat2","lon2", "elevation","NLCDclass")]
+
+#Merging id df with lat2 lon2 data
+id <- merge(x = uniquetrap, y = id, by.y = "plotID", by.x = "uniquePlotIDs", all.y = TRUE)
+
+```
+
+One thing to keep in mind is that the identification and sorting data frames 
+only contain samples where the mosquitoes were present. However, we might also
+be interested in analyzing the samples where mosquitoes were not present. So we
+need to find the rows in the trap data frame where the plot ID is not in the
+id data frame and the target taxon is not present. First we create a subset of
+the trap data frame where mosquitoes were not found in the sample. Since we 
+want to then merge these rows with those in our id data frame we add in columns
+that are present in the id dataframe but not in the trap data frame and row-bind
+these two data frames together.
+
+```{r}
+# Get zero traps from trapping
+new_trap<- trap[!trap$sampleID %in% id$sampleID & trap$targetTaxaPresent=="N",]
+
+#Add columns in new_trap that weren't present in the ID table then add new_trap to ID table
+new_trap <- new_trap[, colnames(new_trap)[colnames(new_trap)%in%colnames(id)]]
+
+new_trap[, colnames(id)[!colnames(id)%in%colnames(new_trap)]]<-NA
+
+id <- rbind(id,new_trap)
 ```
 
 
