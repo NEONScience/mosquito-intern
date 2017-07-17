@@ -230,10 +230,10 @@ in each subsample.
 
 * metadata about the quality of the data 
 
-The identification table contains information about all mosquitos that were found
-in each subsample. Each sample in the identification dataset contains the target
-taxa and once identified is either directly archived, or first sent to an external
-lab for Pathogen testing. 
+The identification table contains information about all mosquitos that were 
+found in each subsample. Each sample in the identification dataset contains the
+target taxa and once identified is either directly archived, or first sent to an
+external lab for Pathogen testing. 
 
 ### Taxonomy Data Table
 
@@ -333,16 +333,17 @@ trap$lon2<-ifelse(is.na(trap$lon)==TRUE, trap$pdaDecimalLongitude,trap$lon)
 The next step in our data cleaning process is to consolidate all of the 
 information stored in the trapping, identification, and sorting data frames. 
 A lot of the information in the sorting data frame is very similar to what is
-found in the identification data frame. One key difference is that the sorting
-data frame also contains the weight of the subsample, the weight of the bycatch,
-and the total weight of the sample. 
+found in the identification data frame. But, one key difference is that the 
+sorting data frame also contains the weight of the subsample, the weight of the 
+bycatch, and the total weight of the sample. So we want to only select the 
+columns in the sorting data frame that aren't in the id data frame.
 
 ```{r}
 
 # Create a vector of column names that are in sort but not in id
 cols = colnames(sort)[!colnames(sort)%in%colnames(id)]
 
-# Merge 
+# Merge id with subsetted sorting data frame
 id <- left_join(id, sort[, c('subsampleID', cols)], 
                 by = "subsampleID")
 
@@ -383,6 +384,118 @@ new_trap <- new_trap[, colnames(new_trap)[colnames(new_trap)%in%colnames(id)]]
 new_trap[, colnames(id)[!colnames(id)%in%colnames(new_trap)]]<-NA
 
 id <- rbind(id,new_trap)
+```
+
+###Creating Variables and Obtaining Weather Data 
+
+Now that we have a more complete id data set, we want to create a couple of 
+variables that could be useful in our analysis as well as obtain weather data
+from the National Oceanic and Atmospheric Administration (NOAA). To start, we 
+will note that the individual count present in each observation of the id data
+frame is only the individual count of each subsample. So to estimate the 
+number of individuals in each sample we will use the sample weight,
+by-catch weight, and subsample weight to generate a sample multiplier. To 
+create the sample multiplier we use an if-else statement to find only the rows
+in the id dataframe where by-catch weight information is present. Then we divide
+the total sample weight by the by-catch weight subtracted from the subsample
+weight. Next we use another if-else statement to replace all instances where
+the sample multiplier is infinity with NAs. We then create a new variable called
+'newindividualCount'where we multiply the individual count by the sample
+multiplier.
+
+```{r}
+
+#Creation of sample multiplier
+id$sampleMultiplier <- ifelse(is.na(id$bycatchWeight)==F,id$totalWeight/(id$subsampleWeight-id$bycatchWeight), NA)
+id$sampleMultiplier <- ifelse(id$sampleMultiplier==Inf, NA, id$sampleMultiplier)
+
+#Creation of New individual Count with Multiplier
+id$newindividualCount <-ifelse(is.na(id$sampleMultiplier)==F, round(id$individualCount*id$sampleMultiplier), NA)
+
+```
+
+Now that we have an estimate of the abundance of each species in a sample, we
+also want to create a variable that takes into account the amount of time a 
+trap was deployed. One issue present with creating this variable is that traps 
+were either deployed overnight or collected within the space of one day. To
+address this challenge, we use an if-else statement to find observations where
+the set and collect date of the sample differed. We then converted the minutes
+of each set and collect time into hours. Next we calculated the number of hours
+from when the trap was set until midnight by subtracting the set time from 24, 
+we then added the number of hours the trap was deployed on the collect day,
+yielding the length of trap deployment. For observations where the set and 
+collect date were the same, minutes were also converted to hours, and then
+set time was subtracted from the collect time to produce the deployment time. 
+
+```{r}
+
+#Variable that contains the time difference between set and collection in hours
+id$HoursOfTrapping<-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate[8],15,16))/60)+(as.numeric(substr(id$setDate[8],12,13)))))
+
+#Changing hours of trapping to positive number 
+id$HoursOfTrapping <- abs(as.numeric(id$HoursOfTrapping))
+
+```
+
+In our current id data frame, we have only the set and collect dates of each 
+sample, where the collect date and time is formatted as "YYYY-MM-DDThh:mm".
+However, if we want to look at the Julian date of observation for Culex 
+tarsalis, we might want the date and year when the sample was collected. So we 
+use the 'substr' command to collect only the first four characters of the
+'collectDate' variable to pull year information, then we convert year to a 
+factor. Next we extract the date of mosquito collection without the time, by 
+using 'substr' again to take only the first ten characters of 'collectDate'. 
+
+```{r}
+
+#Extracting year information for id
+id$Year<-substr(id$collectDate,1,4)
+
+#Chaning year to be a factor rather than a character
+id$Year<-as.factor(id$Year)
+
+#Exctracting date information for id
+id$Date<-substr(id$collectDate,1,10)
+
+```
+
+Our next objective is to obtain weather information for each day in our data set.
+The data in our temperature data frame ('temp.df') and precipitation data frame
+('precip.df') can be related to our NEON mosquito data by date and by proximity 
+to NEON sample sites. So first we convert the date in the temperature and 
+precipitation data frames to the variable type 'Date'. Next we find
+the site of each sample by taking the first four characters of each plot ID, and
+then merge the id data frame first with the temperature data frame by 'siteID' 
+and 'Date'. Now our data frame is nicely integrated, but we need to fix the 
+units of our maximum temperature variable by dividing each number in the column 
+called 'value' by ten. Then for clarity we rename the variable 'value' as 
+'Max.TempC'. We then repeat this process for our precipitation data. 
+
+```{r}
+
+#Change temp date type
+temp.df$date <- as.Date(temp.df$date)
+
+#Broad Site ID variable 
+id$siteID<-substr(id$uniquePlotIDs,1,4)
+
+#merging id with temp data
+id <- merge(x = temp.df, y = id, by.y = c('siteID','Date'), by.x = c('siteID','date'), all.y = TRUE)
+
+#Converting temperature to proper value
+id$value<-id$value/10
+names(id)[5]<-"Max.TempC"
+
+#Change precip date type
+precip.df$date <- as.Date(precip.df$date)
+
+#Merge id with precip data
+id <- merge(x = precip.df[,c(1,4,9)], y = id, by.y = c('siteID', 'date'), by.x = c('siteID', 'date'), all.y = TRUE)
+
+#converting temperature to proper value and renaming
+id$value<-id$value/10
+names(id)[3]<-"Precipmm"
+
 ```
 
 

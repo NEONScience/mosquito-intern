@@ -82,6 +82,19 @@ new_trap[, colnames(id)[!colnames(id)%in%colnames(new_trap)]]<-NA
 
 id <- rbind(id,new_trap)
 
+#Creation of sample Multiplier
+id$sampleMultiplier <- ifelse(is.na(id$bycatchWeight)==F,id$totalWeight/(id$subsampleWeight-id$bycatchWeight), NA)
+id$sampleMultiplier <- ifelse(id$sampleMultiplier==Inf, NA, id$sampleMultiplier)
+
+#Creation of New individual Count with Multiplier
+id$newindividualCount <-ifelse(is.na(id$sampleMultiplier)==F, round(id$individualCount*id$sampleMultiplier), NA)
+
+#Variable that contains the time difference between set and collection in hours
+id$HoursOfTrapping<-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate[8],15,16))/60)+(as.numeric(substr(id$setDate[8],12,13)))))
+
+#Changing Time diff to numeric
+id$HoursOfTrapping <- abs(as.numeric(id$HoursOfTrapping))
+
 #Extracting year information for id
 id$Year<-substr(id$collectDate,1,4)
 
@@ -91,15 +104,11 @@ id$Year<-as.factor(id$Year)
 #Exctracting date information for id
 id$Date<-substr(id$collectDate,1,10)
 
-#Broad Site ID variable 
-id$siteID<-substr(id$uniquePlotIDs,1,4)
-
 #Change temp date type
 temp.df$date <- as.Date(temp.df$date)
 
-#Change precip date type
-precip.df$date <- as.Date(precip.df$date)
-
+#Broad Site ID variable 
+id$siteID<-substr(id$uniquePlotIDs,1,4)
 
 #merging id with temp data
 id <- merge(x = temp.df, y = id, by.y = c('siteID','Date'), by.x = c('siteID','date'), all.y = TRUE)
@@ -108,29 +117,19 @@ id <- merge(x = temp.df, y = id, by.y = c('siteID','Date'), by.x = c('siteID','d
 id$value<-id$value/10
 names(id)[5]<-"Max.TempC"
 
+#Change precip date type
+precip.df$date <- as.Date(precip.df$date)
+
 #Merge id with precip data
 id <- merge(x = precip.df[,c(1,4,9)], y = id, by.y = c('siteID', 'date'), by.x = c('siteID', 'date'), all.y = TRUE)
 
 #converting temperature to proper value and renaming
 id$value<-id$value/10
 names(id)[3]<-"Precipmm"
-# 
+
 #Merge with domain info.
 id <- merge(x = domain.df, y = id, by.y = "siteID", by.x = "siteid", all.y = TRUE)
 id$domainid <- as.character(id$domainid)
-
-#Variable that contains the time difference between set and collection in hours
-id$HoursOfTrapping<-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate[8],15,16))/60)+(as.numeric(substr(id$setDate[8],12,13)))))
-
-#Changing Time diff to numeric
-id$HoursOfTrapping <- abs(as.numeric(id$HoursOfTrapping))
-
-#Creation of sample Multiplier
-id$sampleMultiplier <- ifelse(is.na(id$bycatchWeight)==F,id$totalWeight/(id$subsampleWeight-id$bycatchWeight), NA)
-id$sampleMultiplier <- ifelse(id$sampleMultiplier==Inf, NA, id$sampleMultiplier)
-
-#Creation of New individual Count with Multiplier
-id$newindividualCount <-ifelse(is.na(id$sampleMultiplier)==F, round(id$individualCount*id$sampleMultiplier), NA)
 
 #Merge with taxonomy df for taxson rank
 id <- merge( x = taxonomy[,c("scientificName", "taxonRank")], y = id, by.x = "scientificName", by.y = "scientificName")
