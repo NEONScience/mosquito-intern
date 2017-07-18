@@ -7,7 +7,7 @@ output:
 ---
 ###Data Frame Set Up
 
-```{r,message=FALSE}
+```{r, warning=FALSE, message=FALSE}
 # install.packages('tidyverse')
 library(tidyverse)
 library(mosaic)
@@ -35,14 +35,14 @@ source('~/GitHub/mosquito-intern/code/get_NEON_location.R')
 uniquePlotIDs <- unique(trap$plotID)
 
 ## apply get_NEON_location function to vector uniquePlotIDs, returns a list where each element is a single plotID with GPS data
-
-st <- Sys.time() # profiling start time
+# 
+# st <- Sys.time() # profiling start time
 
 #Using lapply and the get_NEON_location function to get a list of location information
 latlon <- lapply(uniquePlotIDs, get_NEON_location, output="latlon")
 
 
-end <- Sys.time(); end - st # profiling end time; calculate function execution duration
+# end <- Sys.time(); end - st # profiling end time; calculate function execution duration
 
 ## Convert list into data.frame
 latlon.df <- do.call(rbind, latlon)
@@ -91,16 +91,23 @@ id$sampleMultiplier <- ifelse(id$sampleMultiplier==Inf, NA, id$sampleMultiplier)
 #Creation of New individual Count with Multiplier
 id$newindividualCount <-ifelse(is.na(id$sampleMultiplier)==F, round(id$individualCount*id$sampleMultiplier), NA)
 
-#Variable that contains the time difference between set and collection in hours
-id$HoursOfTrapping<-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate[8],15,16))/60)+(as.numeric(substr(id$setDate[8],12,13)))))
+#Creation of a variable to test whether samples were collected on the same day or different days
+id$sameDay <- ifelse(substr(id$collectDate, 9, 10) != substr(id$setDate,9,10), FALSE, TRUE)
+
+#Creating variables that convert the time of set and collection to hours
+id$setHours <-((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13))))
+id$collectHours <-((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13))))
+
+#variable to calculate the number of hours of trap deployment
+id$HoursOfTrapping <-ifelse(id$sameDay == TRUE, id$collectHours - id$setHours, (24 - id$setHours) + id$collectHours)
 
 #Changing Time diff to numeric
 id$HoursOfTrapping <- abs(as.numeric(id$HoursOfTrapping))
 
-#Extracting year information for id
+#Extracting year information for id from both collect date and recieved date
 id$receivedDate <- as.character(id$receivedDate)
 
-id$Year<-ifelse(is.na(id$collectDate)==T, substr(id$receivedDate,1,4), substr(id$collectDate,1,4))
+id$Year<-ifelse(is.na(id$collectDate), substr(id$receivedDate,1,4), substr(id$collectDate,1,4))
 
 
 #Chaning year to be a factor rather than a character
@@ -165,24 +172,24 @@ specrich$date<-as.Date(specrich$date)
 
 #Two week average max temp
 
-st <- Sys.time() # profiling start time
+#st <- Sys.time() # profiling start time
 
 #debug(Templag)
-TwoWeekAvgMaxTemp<-mapply(Templag, specrich$siteid, specrich$date)
+#TwoWeekAvgMaxTemp<-mapply(Templag, specrich$siteid, specrich$date)
 #undebug(Templag)
 
-end <- Sys.time(); end - st # profiling end time; calculate function execution duration
+#end <- Sys.time(); end - st # profiling end time; calculate function execution duration
 
-specrich <- cbind(specrich, TwoWeekAvgMaxTemp)
+#specrich <- cbind(specrich, TwoWeekAvgMaxTemp)
 
 #Two week average precip
 # st <- Sys.time()
 
-TwoWeekAvgMaxPrecip<-mapply(Preciplag, specrich$siteid, specrich$date)
+#TwoWeekAvgMaxPrecip<-mapply(Preciplag, specrich$siteid, specrich$date)
 
 # end <- Sys.time(); end-st
 
-specrich <-cbind(specrich, TwoWeekAvgMaxPrecip)
+#specrich <-cbind(specrich, TwoWeekAvgMaxPrecip)
 
 #Creating a Continental indicator variable
 specrich$Continental <- ifelse(specrich$domainid %in% c('D18', 'D19'), 'Alaska', ifelse(specrich$domainid == 'D04', 'Puerto Rico', 'Continental U.S'))
@@ -205,10 +212,10 @@ ggplot(specrich, aes(lat2, Precipmm))+
   labs(x = "Latitude", y = "Precipitation in millimeters")+
   ggtitle("Latitude by Precipitation")
 
-ggplot(specrich, aes(TwoWeekAvgMaxTemp, num_species))+
-  geom_point(aes(color = Continental))+
-  labs(x = "Maximum Temperature in Celsius", y = "Number of Species")+
-  ggtitle("Species Richness by Maximum Temperature")
+#ggplot(specrich, aes(TwoWeekAvgMaxTemp, num_species))+
+ # geom_point(aes(color = Continental))+
+  #labs(x = "Maximum Temperature in Celsius", y = "Number of Species")+
+  #ggtitle("Species Richness by Maximum Temperature")
 
 ggplot(specrich, aes(Precipmm, num_species))+
   geom_point(aes(color = lat2))+
@@ -360,9 +367,9 @@ tarssmall <- merge(x = tarstax.df, y = tarssmall, by.x = "domainID", by.y = "dom
 tarssmall$lat2<- as.numeric(tarssmall$lat2)
 tarssmall$lon2<- as.numeric(tarssmall$lon2)
 
-tarssmall$TwoWeekAverageT<- mapply(Templag, tarssmall$siteid, tarssmall$date)
-
-tarssmall$TwoWeekAveragePrecip<-mapply(Preciplag, tarssmall$siteid, tarssmall$date)
+# tarssmall$TwoWeekAverageT<- mapply(Templag, tarssmall$siteid, tarssmall$date)
+# 
+# tarssmall$TwoWeekAveragePrecip<-mapply(Preciplag, tarssmall$siteid, tarssmall$date)
 
 #number of sites of appearance
 length(unique(tars$uniquePlotIDs)) #160

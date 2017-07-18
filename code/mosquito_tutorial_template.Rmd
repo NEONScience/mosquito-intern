@@ -68,7 +68,7 @@ NOAA weather data for each site [here](//github.com/klevan/carabid-workshop/blob
 NEON map shp files [here](//github.com/klevan/carabid-workshop/blob/master/data/zip%20files/map%20data.zip) 
 and the script we will be modifying [here](//github.com/klevan/carabid-workshop/blob/master/code/data-analysis.R). 
 </div>
-##################################################################################################
+#################################################################################################
 
 
 ## NEON Mosquito Data
@@ -82,7 +82,8 @@ into six tables:
  * pathogen results data
  * archiving pooling data
 
-######################################################################################################
+#################################################################################################
+
 For this tutorial we focus on the 2014 data and the 13 sites
 for which data is available in that year. To look at all this data requires 
 downloading 39 files (one field, sorting and pinning data for each site) and 
@@ -95,7 +96,7 @@ data collection. It is highly recommended you are familiar with the
 target="_blank">data product documents </a>
 prior to using NEON carabid beetle data for your research. 
 
-#######################################################################################################
+#################################################################################################
 
 
 We'll explore these six tables and then combine them into a couple of clean
@@ -262,7 +263,7 @@ SHOULD I ALSO ADD IN THE DOMAIN, PRECIP, AND TEMP TABLES HERE?
 HOW SHOULD I TALK ABOUT THE SOURCE FUNCTION
 
 
-#Cleaning the Data
+#Wrangling the Data
 
 ###Obtaining location information
 
@@ -418,19 +419,28 @@ Now that we have an estimate of the abundance of each species in a sample, we
 also want to create a variable that takes into account the amount of time a 
 trap was deployed. One issue present with creating this variable is that traps 
 were either deployed overnight or collected within the space of one day. To
-address this challenge, we use an if-else statement to find observations where
-the set and collect date of the sample differed. We then converted the minutes
-of each set and collect time into hours. Next we calculated the number of hours
-from when the trap was set until midnight by subtracting the set time from 24, 
-we then added the number of hours the trap was deployed on the collect day,
-yielding the length of trap deployment. For observations where the set and 
-collect date were the same, minutes were also converted to hours, and then
-set time was subtracted from the collect time to produce the deployment time. 
+address this challenge, we first create a variable that returns true if the 
+set date and the collect date are on the same day. Next we create two variables
+that converts the minutes of the set and collect times into hours. After that, 
+we use an if-else statement to find observations where set and collection dates
+were on the same day, then we subtract the set hours from the collection hours
+to get the number of hours that the trap was deployed. If the trap was deployed
+over the period of two days, we calculate the number of hours from when the trap
+was set until midnight by subtracting the set time from 24, then added the
+number of hours the trap was deployed on the collect day to yield the hours of 
+deployment. 
 
 ```{r}
 
-#Variable that contains the time difference between set and collection in hours
-id$HoursOfTrapping<-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10), 24 - ((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13)))) + ((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13)))),((as.numeric(substr(id$collectDate[8],15,16))/60)+(as.numeric(substr(id$collectDate[8],12,13)))) - ((as.numeric(substr(id$setDate[8],15,16))/60)+(as.numeric(substr(id$setDate[8],12,13)))))
+#Creation of a variable to test whether samples were collected on the same day or different days
+id$sameDay <- ifelse(substr(id$collectDate, 9, 10) != substr(id$setDate,9,10), FALSE, TRUE)
+
+#Creating variables that convert the time of set and collection to hours
+id$setHours <-((as.numeric(substr(id$setDate,15,16))/60)+(as.numeric(substr(id$setDate,12,13))))
+id$collectHours <-((as.numeric(substr(id$collectDate,15,16))/60)+(as.numeric(substr(id$collectDate,12,13))))
+
+#variable to calculate the number of hours of trap deployment
+id$HoursOfTrapping <-ifelse(id$sameDay == TRUE, id$collectHours - id$setHours, (24 - id$setHours) + id$collectHours)
 
 #Changing hours of trapping to positive number 
 id$HoursOfTrapping <- abs(as.numeric(id$HoursOfTrapping))
@@ -443,16 +453,21 @@ However, if we want to look at the Julian date of observation for Culex
 tarsalis, we might want the date and year when the sample was collected. So we 
 use the 'substr' command to collect only the first four characters of the
 'collectDate' variable to pull year information, then we convert year to a 
-factor. Next we extract the date of mosquito collection without the time, by 
-using 'substr' again to take only the first ten characters of 'collectDate'. 
+factor. However, in the id data frame there are some observations where the 
+collection date was not available. For many of the observations where 
+collection information is missing, the date of when the sample was recieved so
+we can extract year information in a similar fashion from the 'recievedDate' 
+variable. 
 
 ```{r}
 
 #Extracting year information for id
 id$Year<-substr(id$collectDate,1,4)
 
-#Chaning year to be a factor rather than a character
-id$Year<-as.factor(id$Year)
+#Extracting year information for id from both collect date and recieved date
+id$receivedDate <- as.character(id$receivedDate)
+
+id$Year<-ifelse(is.na(id$collectDate), substr(id$receivedDate,1,4), substr(id$collectDate,1,4))
 
 #Exctracting date information for id
 id$Date<-substr(id$collectDate,1,10)
