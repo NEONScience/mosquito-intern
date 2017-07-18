@@ -17,8 +17,10 @@ library(ggplot2)
 library(gridExtra)
 library(scales)
 
+options(stringsAsFactors = FALSE) 
 
-trap = read_csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_trapping_in.csv', na = "NA")
+
+trap = read_csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_trapping_in.csv', na = 'NA')
 sort = read_csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_sorting_in.csv', na = "NA")
 id = read_csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_identification_in.csv', na = "NA")
 pathogen = read_csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_pathogenresults_in.csv', na = "NA")
@@ -34,13 +36,13 @@ uniquePlotIDs <- unique(trap$plotID)
 
 ## apply get_NEON_location function to vector uniquePlotIDs, returns a list where each element is a single plotID with GPS data
 
-# st <- Sys.time() # profiling start time
+st <- Sys.time() # profiling start time
 
 #Using lapply and the get_NEON_location function to get a list of location information
 latlon <- lapply(uniquePlotIDs, get_NEON_location, output="latlon")
 
 
-# end <- Sys.time(); end - st # profiling end time; calculate function execution duration
+end <- Sys.time(); end - st # profiling end time; calculate function execution duration
 
 ## Convert list into data.frame
 latlon.df <- do.call(rbind, latlon)
@@ -98,8 +100,8 @@ id$HoursOfTrapping <- abs(as.numeric(id$HoursOfTrapping))
 #Extracting year information for id
 id$receivedDate <- as.character(id$receivedDate)
 
-# id$Year<-ifelse(nchar(id$collectDate)==0, substr(id$receivedDate,1,4), substr(id$collectDate,1,4))
-# 
+id$Year<-ifelse(is.na(id$collectDate)==T, substr(id$receivedDate,1,4), substr(id$collectDate,1,4))
+
 
 #Chaning year to be a factor rather than a character
 id$Year<-as.factor(id$Year)
