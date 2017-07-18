@@ -267,9 +267,9 @@ HOW SHOULD I TALK ABOUT THE SOURCE FUNCTION
 ###Obtaining location information
 
 Before we can begin analyzing our data frames, we need to create a few new 
-variables and collect all the information we need into certain dataframes.
-To start, we will be extracting latitude and longitude information from NEON's
-application programming interfaces. 
+variables and collect all the information we need into a unified usable 
+dataframe. To start, we will be extracting latitude and longitude information 
+from NEON's application programming interfaces. 
 
 ```{r}
 
@@ -498,7 +498,47 @@ names(id)[3]<-"Precipmm"
 
 ```
 
+### Finishing Touches and Filtering Data
 
+Now that we have location and weather information in a more usable format we
+are almost ready to start analyzing our NEON data. However we need to add domain
+and taxon rank information to our data frames so we can track changes in
+mosquito ranges and filter out missing data.
+
+```{r}
+
+#Merge with domain info.
+id <- merge(x = domain.df, y = id, by.y = "siteID", by.x = "siteid", all.y = TRUE)
+id$domainid <- as.character(id$domainid)
+
+#Merge with taxonomy df for taxson rank
+id <- merge( x = taxonomy[,c("scientificName", "taxonRank")], y = id, by.x = "scientificName", by.y = "scientificName")
+
+```
+
+Speaking of missing data, a quick exploration of our resulting identification
+data frame might reveal that the number of mosquito observations fluctuate 
+greatly for the years 2012, 2013, and 2015. This is because of changes in 
+sampling design, making the observations for these years less comparable to 
+2014 and 2016. Due to the changes in sampling design for mosquito collection,
+we will continue on with our analysis and focus in on the data from 2014 and
+2016. We will also filter our existing data by taxon rank. We choose to filter 
+out any observations in our data that are not identified down to the species or
+subspecies level so we can get a better idea of species richness and find 
+samples where *Culex tarsalis* was present.
+
+```{r}
+
+#Filter by species and subspecies classification
+id <- dplyr::filter(id, id$taxonRank %in% c("subspecies","species"))
+
+#smalle subset only containing 2014 and 2016
+idsmall<-dplyr::filter(id, id$Year %in% c(2014,2016))
+
+```
+
+
+#################################################################################################
 
 ### IDs to Connect Tables
 

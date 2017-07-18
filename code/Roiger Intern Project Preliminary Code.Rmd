@@ -18,14 +18,14 @@ library(gridExtra)
 library(scales)
 
 
-trap = read.csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_trapping_in.csv')
-sort = read.csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_sorting_in.csv')
-id = read.csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_identification_in.csv')
-pathogen = read.csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_pathogenresults_in.csv')
-taxonomy = read.csv("~/GitHub/mosquito-intern/resources/mosquito_taxonomy.csv")
-precip.df = read.csv('~/GitHub/mosquito-intern/resources/precipitation.csv')
-temp.df = read.csv("~/GitHub/mosquito-intern/resources/temperature_maximum.csv")
-domain.df = read.csv("~/GitHub/mosquito-intern/data/domainid_siteid_match.csv")
+trap = read_csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_trapping_in.csv', na = "NA")
+sort = read_csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_sorting_in.csv', na = "NA")
+id = read_csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_identification_in.csv', na = "NA")
+pathogen = read_csv('N:/Science/FSU/Intern Projects/2017_CharlotteRoiger/mos_pathogenresults_in.csv', na = "NA")
+taxonomy = read_csv("~/GitHub/mosquito-intern/resources/mosquito_taxonomy.csv", na = "NA")
+precip.df = read_csv('~/GitHub/mosquito-intern/resources/precipitation.csv', na = "NA")
+temp.df = read_csv("~/GitHub/mosquito-intern/resources/temperature_maximum.csv", na = "NA")
+domain.df = read_csv("~/GitHub/mosquito-intern/data/domainid_siteid_match.csv", na = "NA")
 source('~/GitHub/mosquito-intern/code/get_NEON_location.R')
 
 #source('~/mosquito-intern/code/mapping_viz.R')
@@ -96,7 +96,10 @@ id$HoursOfTrapping<-ifelse(substr(id$setDate,9,10)!=substr(id$collectDate,9,10),
 id$HoursOfTrapping <- abs(as.numeric(id$HoursOfTrapping))
 
 #Extracting year information for id
-id$Year<-substr(id$collectDate,1,4)
+id$receivedDate <- as.character(id$receivedDate)
+
+# id$Year<-ifelse(nchar(id$collectDate)==0, substr(id$receivedDate,1,4), substr(id$collectDate,1,4))
+# 
 
 #Chaning year to be a factor rather than a character
 id$Year<-as.factor(id$Year)
@@ -134,6 +137,7 @@ id$domainid <- as.character(id$domainid)
 #Merge with taxonomy df for taxson rank
 id <- merge( x = taxonomy[,c("scientificName", "taxonRank")], y = id, by.x = "scientificName", by.y = "scientificName")
 
+#Filter by species and subspecies classification
 id <- dplyr::filter(id, id$taxonRank %in% c("subspecies","species"))
 
 #smalle subset only containing 2014 and 2016
