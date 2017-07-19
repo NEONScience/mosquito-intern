@@ -172,15 +172,15 @@ specrich$date<-as.Date(specrich$date)
 
 #Two week average max temp
 
-#st <- Sys.time() # profiling start time
+st <- Sys.time() # profiling start time
 
-#debug(Templag)
-#TwoWeekAvgMaxTemp<-mapply(Templag, specrich$siteid, specrich$date)
-#undebug(Templag)
+debug(Templag)
+TwoWeekAvgMaxTemp<-mapply(Templag, specrich$siteid, specrich$date)
+undebug(Templag)
 
-#end <- Sys.time(); end - st # profiling end time; calculate function execution duration
+end <- Sys.time(); end - st # profiling end time; calculate function execution duration
 
-#specrich <- cbind(specrich, TwoWeekAvgMaxTemp)
+specrich <- cbind(specrich, TwoWeekAvgMaxTemp)
 
 #Two week average precip
 # st <- Sys.time()
