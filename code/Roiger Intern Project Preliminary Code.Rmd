@@ -172,15 +172,17 @@ specrich$date<-as.Date(specrich$date)
 
 #Two week average max temp
 
-st <- Sys.time() # profiling start time
+# st <- Sys.time() # profiling start time
+# 
+# debug(Templag)
+SPTWAMT.mat<-mapply(Templag, specrich$siteid, specrich$date)
+specrich$TwoWeekAvgMT<- c(unlist(SPTWAMT.mat[1,]))
+specrich$DegreeDays <- c(unlist(SPTWAMT.mat[2,]))
+# undebug(Templag)
+# 
+# end <- Sys.time(); end - st # profiling end time; calculate function execution duration
 
-debug(Templag)
-TwoWeekAvgMaxTemp<-mapply(Templag, specrich$siteid, specrich$date)
-undebug(Templag)
-
-end <- Sys.time(); end - st # profiling end time; calculate function execution duration
-
-specrich <- cbind(specrich, TwoWeekAvgMaxTemp)
+# specrich <- cbind(specrich, TwoWeekAvgMT, DegreeDays)
 
 #Two week average precip
 # st <- Sys.time()
@@ -195,32 +197,34 @@ specrich <- cbind(specrich, TwoWeekAvgMaxTemp)
 specrich$Continental <- ifelse(specrich$domainid %in% c('D18', 'D19'), 'Alaska', ifelse(specrich$domainid == 'D04', 'Puerto Rico', 'Continental U.S'))
 
 #Preliminary graph of latitude by species richness overall
-ggplot(specrich,aes(lat2, num_species))+
+SpecRichLat<-ggplot(specrich,aes(lat2, num_species))+
   geom_point(aes(colour = Year), size = 2)+
-  labs(x = "Latitude", y = "Number of Species")+
-  ggtitle("Species Richness by Latitude")
+  labs(x = "Latitude", y = "Number of Species")
+  # ggtitle("Species Richness by Latitude")
 
-#Preliminary graph of latitude vs. maximum temp
-ggplot(specrich, aes(lat2, Max.TempC))+
-  geom_point(color = 'dark blue', size = 2)+
-  labs(x = "Latitude", y = "Maximum Temperature in Celsius")+
-  ggtitle("Latitude by Maximum Temperature")
+# #Preliminary graph of latitude vs. maximum temp
+# ggplot(specrich, aes(lat2, Max.TempC))+
+#   geom_point(color = 'dark blue', size = 2)+
+#   labs(x = "Latitude", y = "Maximum Temperature in Celsius")+
+#   ggtitle("Latitude by Maximum Temperature")
 
-#Preliminary graph of latitude vs. precipitation
-ggplot(specrich, aes(lat2, Precipmm))+
-  geom_point(color = 'orange')+
-  labs(x = "Latitude", y = "Precipitation in millimeters")+
-  ggtitle("Latitude by Precipitation")
+# #Preliminary graph of latitude vs. precipitation
+# ggplot(specrich, aes(lat2, Precipmm))+
+#   geom_point(color = 'orange')+
+#   labs(x = "Latitude", y = "Precipitation in millimeters")+
+#   ggtitle("Latitude by Precipitation")
 
-#ggplot(specrich, aes(TwoWeekAvgMaxTemp, num_species))+
- # geom_point(aes(color = Continental))+
-  #labs(x = "Maximum Temperature in Celsius", y = "Number of Species")+
-  #ggtitle("Species Richness by Maximum Temperature")
+#Preliminary graph of species richness by max temp avg
+SpecRichTemp<-ggplot(specrich, aes(TwoWeekAvgMT, num_species))+
+geom_point(aes(color = Continental))+
+labs(x = "Two Week Average Maximum Temperature in Celsius", y = "Number of Species")
+# ggtitle("Species Richness by Two Week Average Maximum Temperature")
 
-ggplot(specrich, aes(Precipmm, num_species))+
-  geom_point(aes(color = lat2))+
+#Preliminary graph of species richness by degree day
+ggplot(specrich, aes(DegreeDays,num_species))+
+  geom_point(aes(color = Continental))+
   labs(x = "Precipitation in Millimeters", y = "Number of Species")+
-  ggtitle("Species Richness by Precipitation")
+  # ggtitle("Species Richness by Precipitation")
 
 # ggplot(specrich, aes(NLCDclass, num_species))+
 #   geom_jitter(aes(color = NLCDclass))+
@@ -348,6 +352,11 @@ table(id$Year, id$scientificName=="Culex tarsalis")
 #Tracking number of sites where Cu. tarsalis has been identified
 tars<- id[grepl("Culex tarsalis", id$scientificName),]
 tarssmall <- tars[tars$Year %in% c(2014,2016), ]
+
+CTTWAMT.mat<- mapply(Templag, tarssmall$siteid, tarssmall$date)
+tarssmall$TwoWeekAvgMT <-c(unlist(CTTWAMT.mat[1,]))
+tarssmall$DegreeDays <- c(unlist(CTTWAMT.mat[2,]))
+
 tars2014 <- tarssmall[tarssmall$Year==2014,]
 tars2016 <- tarssmall[tarssmall$Year==2016,]
 
@@ -367,26 +376,24 @@ tarssmall <- merge(x = tarstax.df, y = tarssmall, by.x = "domainID", by.y = "dom
 tarssmall$lat2<- as.numeric(tarssmall$lat2)
 tarssmall$lon2<- as.numeric(tarssmall$lon2)
 
-# tarssmall$TwoWeekAverageT<- mapply(Templag, tarssmall$siteid, tarssmall$date)
-# 
 # tarssmall$TwoWeekAveragePrecip<-mapply(Preciplag, tarssmall$siteid, tarssmall$date)
 
 #number of sites of appearance
 length(unique(tars$uniquePlotIDs)) #160
-length(unique(tars2013$uniquePlotIDs)) #35
+# length(unique(tars2013$uniquePlotIDs)) #35
 length(unique(tars2014$uniquePlotIDs)) #40
 length(unique(tars2016$uniquePlotIDs)) #115
 
 
 #Sum of Cu. tarsalis for each year
-sum(tars2013$newindividualCount) # 1,690
+# sum(tars2013$newindividualCount) # 1,690
 sum(tars2014$newindividualCount) # 17,432
 sum(na.omit(tars2016$newindividualCount)) # 11,827
 
 #Proportion of Cu. tarsalis relative to total number collected by year
-sum(complete.cases(tars2013$newindividualCount))/sum(complete.cases(id2013$newindividualCount))
-sum(complete.cases(tars2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount))
-sum(complete.cases(tars2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))
+# sum(complete.cases(tars2013$newindividualCount))/sum(complete.cases(id2013$newindividualCount))
+# sum(complete.cases(tars2014$newindividualCount))/sum(complete.cases(id2014$newindividualCount))
+# sum(complete.cases(tars2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))
 
 
 tarssmall <- tarssmall[order(as.Date(tarssmall$date)),]
@@ -399,7 +406,7 @@ tars.firstplot <- tarssmall[match(unique(tarssmall$uniquePlotIDs), tarssmall$uni
 # Visualizations for domains, sites and plots where cx. tarsalis is present
 tars2016$date<-as.Date(tars2016$date)
 tars2014$date<-as.Date(tars2014$date)
-tars2013$date<-as.Date(tars2013$date)
+# tars2013$date<-as.Date(tars2013$date)
 
 # Abundance of Culex tarsalis for 2014 and 2016
 plot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(individualCount)))+
@@ -418,16 +425,16 @@ plot2014 <-ggplot(tars2014, aes(as.Date(date), as.numeric(individualCount)))+
 grid.arrange(plot2014,plot2016)
 
 # Maximum temperature for 2014 and 2016
-tempplot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(TwoWeekAverageT)))+
+tempplot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(TwoWeekAvgMT)))+
   geom_point(color = "red", size = 2)+
-  labs(x = "Date", y = "Maximum Temperature in C")+
+  labs(x = "Date", y = "Two Week Average Maximum Temperature in C")+
   scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month")+
-  ggtitle("Date versus Maximum Temperature for 2016")
-tempplot2014 <-ggplot(tars2014, aes(as.Date(date), as.numeric(Max.TempC)))+
+  ggtitle("Date versus Two Week Average Maximum Temperature for 2016")
+tempplot2014 <-ggplot(tars2014, aes(as.Date(date), as.numeric(TwoWeekAvgMT)))+
   geom_point(color = "purple", size = 2)+
   scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month", limits = as.Date(c("2014-05-01","2014-11-01")))+
-  labs(x = "Date", y = "Maximum Temperature in C")+
-  ggtitle("Date versus Maximum Temperature for 2014")
+  labs(x = "Date", y = "Two Week Average Maximum Temperature in C")+
+  ggtitle("Date versus Two Week Average Maximum Temperature for 2014")
 
 grid.arrange(tempplot2014, tempplot2016)
 
