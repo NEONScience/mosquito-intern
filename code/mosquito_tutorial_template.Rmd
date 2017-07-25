@@ -553,6 +553,231 @@ idsmall<-dplyr::filter(id, id$Year %in% c(2014,2016))
 ```
 
 
+#Vignette One: Mosquito Species Richness Over Latitudinal Gradients
+
+
+###Calculating Species Richness and  Obtaining Location Information
+
+Now that we have our data frames in a more usable format, we want to explore 
+Mosquito species richness to see if there is a pattern in relation to 
+sample latitude. The first step we need to take to explore this topic is to
+calculate species richness at each sample plot. However if we calculate species 
+richness for each plot, we lose some complexity in our data since plots were 
+sampled multiple times. So we want to calculate the species richness per plot
+but also take into accound the date at which each sample was taken. To tackle 
+this problem we use the 'ddply' command from the 'plyr' package to count the 
+number of unique scientific names for each plot and date. We also choose to 
+include certain variables in the id data frame that could be relevant to our 
+exploration of species richness
+
+```{r}
+
+specrich <- ddply(idsmall, ~ uniquePlotIDs + domainid + siteid + date + Year + HoursOfTrapping + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
+
+```
+
+#################Why can't I just add it to ddply???? investigate later.############
+
+Next we merge our newply formed species ricness data frame with location
+information and convert latitude and longitude information into  a numeric. To 
+start exploring species richness we will make a scatter plot of species richness
+over latitude using the package 'ggplot2'. Another factor that we might want to
+take into account is the year in which the sample was taken to see if patterns
+in species richness differ by year. We will incorporate this variable into our 
+scatterplot of species richness over latitude by coloring the dots in our plot 
+with their corresponding year. 
+
+
+```{r}
+
+# Merging to get lat2 lon2 data
+specrich <- merge(x = uniquetrap, y = specrich, by.y = "uniquePlotIDs", by.x = "uniquePlotIDs")
+
+# Changin lat2 to a numeric and date to date class
+specrich$lat2<-as.numeric(specrich$lat2)
+specrich$date<-as.Date(specrich$date)
+
+# Plotting Species Richness over Latitude
+
+ggplot(specrich,aes(lat2, num_species))+
+  geom_point(aes(colour = Year), size = 2)+
+  labs(x = "Latitude", y = "Number of Species")+
+  ggtitle("Species Richness by Latitude")
+
+```
+
+What we can see from the plot of species richness by latitude is that there 
+appears to be a large amount of clustering between 28 and about 47 degrees 
+latitude. This result makes sense since most NEON sampling sites are located on 
+the continental United States. Another thing we might notice is that there
+does not appear to be a recognizable pattern between species richness and 
+latitude for both 2014 and 2016. However, latitude is a proxy variable for other
+environmental factors such as temperature. In our current data frame, we have
+a variable that accounts for the maximum temperature on the day of mosquito 
+collection, but it might be more useful to develop a metric that captures the
+maximum temperature of the days prior to collection. 
+
+###Creating a Temperature Lag Function
+
+To examine the maximum temperature of days before the collection date, we will 
+develop a function that takes the average maximum temperature of the 14 days
+prior to the sample collection date. To start, we define a function that takes 
+the date and site identification as inputs, and use the filter command to create
+a data frame that contains temperature information for each observation. We then
+take an average of the maximum temperature for the 14 days prior to collection
+at each site and also count the number of days where the maximum temperature was
+greater than 16 degrees Celsius.  
+
+```{r}
+
+Templag <- function(siteID, date){ 
+  date <- as.Date(date) #Converting all date inputs into date format
+  filter1 <- temp.df[grepl(siteID, temp.df$siteID),] #subset our temp data by site id
+  filter2 <- filter1[filter1$date >= date - 14 & filter1$date < date + 1,] # subset by date
+  TwoWeekAvgT <- mean(filter2$value)/10 #standardize temperature values
+  filter3 <- filter2[filter2$value > 16,] #select rows with max temp greater than 16 degrees C
+  GDD <- length(unique(filter3$date)) # count the number of unique dates in data frame
+  return(list(TwoWeekAvgT=TwoWeekAvgT, GDD=GDD))
+}
+
+```
+
+Now that our temperature lag function is complete, we will use the 'mapply'
+command to apply it to our species richness dataframe. We then create two new 
+variables that capture the average maximum temperature and the number of degree 
+days for the two weeks before collection. Once the two temperature variables
+are created, we then create a scatterplot of species richness over the average 
+maximum temperature. 
+
+```{r, echo = FALSE}
+
+SPTWAMT.mat <- readRDS('SpeciesRichTempLag.rds')
+
+```
+
+```{r}
+
+#Applying temp lag fucntion to species richness data frame
+#SPTWAMT.mat<-mapply(Templag, specrich$siteid, specrich$date)
+
+#Creating variables that capture average max temp and degree days 
+specrich$TwoWeekAvgMT<- c(unlist(SPTWAMT.mat[1,]))
+specrich$DegreeDays <- c(unlist(SPTWAMT.mat[2,]))
+
+#Scatterplot of species richness and two week average max temp
+ggplot(specrich, aes(TwoWeekAvgMT, num_species))+
+  geom_point(color = "green")+
+  labs(x = "Two Week Average Maximum Temperature in Celsius", y = "Number of Species")+
+  ggtitle("Species Richness by Two Week Average Maximum Temperature")
+
+```
+
+Looking at the scatterplot of species richness by two week average maximum 
+temperature, we can see a sort of distribution where species richness is highest
+where the average maximum temperature two weeks prior to collection was between 
+25 to 32 degrees Celsius with a couple of outliers around 24 and 28 degrees
+Celsius. FINISH THIS
+
+<div id = "challenge" markdown = "1">
+
+###Challenge: Creating a Preipitation Lag Function
+
+Now that we've created and applied a function that can calculate the average 
+maximum temperature over a two week period before collection, try creating a
+function that gauges the amount of precipitation at a sampling site before
+collection. 
+
+</div>
+
+#Vignette Two: Culex Tarsalis 
+
+
+###Setting up data frames
+
+To begin our investigation of spatial patterns and phenology of the species
+*Culex tarsalis*, we need to create data frames with only the information
+relating to *Culx tarsalis* is present. But first we take a look at the number
+times *Culex tarsalis* was present in our data.
+
+```{r}
+
+#Instances of Cu. tarsalis by Year
+table(id$Year, id$scientificName=="Culex tarsalis")
+
+```
+
+We can see from the table that *Culex tarsalis* was sampled most fequently in 
+the years 2014 and 2016. So very similar to our examination of species ricness,
+we will be focusing on these two years. Now we will subset our id data frame
+to only include rows of data where *Culex tarsalis* is in the 'scientificName'
+variable column. We next create an even smaller subset of our data by selecting
+rows whose year was either 2014 or 2016.
+
+```{r}
+
+#Creation of a subset with only Culex tarsalis
+tars<- id[grepl("Culex tarsalis", id$scientificName),]
+
+#Subset with only 2014 and 2016
+tarssmall <- tars[tars$Year %in% c(2014,2016), ]
+
+```
+
+Next we create variables that captures the two week average maximum temperature
+and the number of days greater than 16 degrees Celsius before collection by 
+applying the temperature lag fucntion to the new *Culex tarsalis* data frame
+('tarssmall'). 
+
+```{r, echo = false}
+
+CTTWAMT.mat <- readRDS('CulexTarsalisTempLag.rds')
+
+```
+
+```{r}
+#Applying temperature lag function to tarssmall
+CTTWAMT.mat<- mapply(Templag, tarssmall$siteid, tarssmall$date)
+
+#Creation of two variables 
+tarssmall$TwoWeekAvgMT <-c(unlist(CTTWAMT.mat[1,]))
+tarssmall$DegreeDays <- c(unlist(CTTWAMT.mat[2,]))
+
+```
+
+Next we want to explore the range of *Culex tarsalis* for the years 2014 and 2016.
+However, it might be helpful to know the regions in which *Culex tarsalis* is 
+considered to be native. One problem with obtaining the native status of 
+*Culex tarsalis* is that the native status information is contained in the 
+taxonomy data frame as a single row of data, as demonstrated below.
+
+```{r}
+
+#A look at the row of data in the taxonomy data frame 
+taxonomy[grepl("Culex tarsalis", taxonomy$scientificName),]
+
+```
+
+Notice how the native status information in the taxonomy data is separated by
+domain in separate columns in a 'wide' format. We need the native status
+information to be in the form of a column or vector to be added to our current
+'tarssmall' data frame, so we use the gather command from the tidyr package
+to find the columns in the taxonomy data frame that contained native status
+information and transformed that row of information into a new data frame.
+
+```{r}
+
+#Selecting certain columns of the tarstax data frame to find native status information
+tarstax <- tidyr:: gather(taxonomy[grepl("Culex tarsalis", taxonomy$scientificName), grepl("NativeStatusCode", colnames(taxonomy))], "Domain ID")
+
+#Omitting rows of data where no information is available
+tarstax<-tarstax[c(5:15,17:23),]
+
+#Creation of a dataframe that includes domain identification and native status
+tarstax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeStatus"= tarstax)
+
+```
+
+
 #################################################################################################
 
 ### IDs to Connect Tables
