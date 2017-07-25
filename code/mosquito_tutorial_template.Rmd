@@ -572,7 +572,7 @@ exploration of species richness
 
 ```{r}
 
-specrich <- ddply(idsmall, ~ uniquePlotIDs + domainid + siteid + date + Year + HoursOfTrapping + Precipmm + Max.TempC, summarize, num_species = length(scientificName))
+specrich <- ddply(idsmall, ~ uniquePlotIDs + domainid + siteid + date + Year + HoursOfTrapping + Precipmm + Max.TempC, summarize, num_species = length(unique(scientificName)))
 
 ```
 
@@ -776,6 +776,7 @@ tarstax<-tarstax[c(5:15,17:23),]
 tarstax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeStatus"= tarstax)
 
 ```
+
 
 
 #################################################################################################
