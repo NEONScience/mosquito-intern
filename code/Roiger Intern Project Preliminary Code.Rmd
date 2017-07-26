@@ -86,8 +86,10 @@ new_trap[, colnames(id)[!colnames(id)%in%colnames(new_trap)]]<-NA
 id <- rbind(id,new_trap)
 
 #Creation of sample Multiplier
-id$sampleMultiplier <- ifelse(is.na(id$bycatchWeight)==F,id$totalWeight/(id$subsampleWeight-id$bycatchWeight), NA)
+id$sampleMultiplier <- ifelse(is.na(id$bycatchWeight), id$totalWeight/id$subsampleWeight, id$totalWeight/(id$subsampleWeight-id$bycatchWeight))
 id$sampleMultiplier <- ifelse(id$sampleMultiplier==Inf, NA, id$sampleMultiplier)
+id$sampleMultiplier <- ifelse(id$subsampleWeight==0 & id$individualCount != 0, 1, id$sampleMultiplier)
+
 
 #Creation of New individual Count with Multiplier
 id$newindividualCount <-ifelse(is.na(id$sampleMultiplier)==F, round(id$individualCount*id$sampleMultiplier), NA)
@@ -186,6 +188,10 @@ specrich <- merge(x = uniquetrap[,c("lat2", "lon2", "elevation", "NLCDclass", "s
 specrich$lat2<-as.numeric(specrich$lat2)
 specrich$date<-as.Date(specrich$date)
 
+#Creating a Year variable
+
+specrich$Year <- substr(specrich$date, 1,4)
+
 #Two week average max temp
 
 # st <- Sys.time() # profiling start time
@@ -233,7 +239,7 @@ ggplot(specrich,aes(lat2, num_species))+
 
 #Preliminary graph of species richness by max temp avg
 ggplot(specrich, aes(TwoWeekAvgMT, num_species))+
-  geom_point(aes(color = Continental))+
+  geom_point(aes(color = Year))+
   labs(x = "Two Week Average Maximum Temperature in Celsius", y = "Number of Species")+
   ggtitle("Species Richness by Two Week Average Maximum Temperature")
 
@@ -371,11 +377,21 @@ table(id$Year, id$scientificName=="Culex tarsalis")
 tars<- id[grepl("Culex tarsalis", id$scientificName),]
 tarssmall <- tars[tars$Year %in% c(2014,2016), ]
 
-CTTWAMT.mat<- mapply(Templag, tarssmall$siteid, tarssmall$date)
-# saveRDS(CTTWAMT.mat, file = 'CulexTarsalisTempLag.rds')
+#Site Level variable
+tarsSiteLevel <- ddply(tarssmall,~siteid + domainid + date, summarize, siteAbundance = sum(newindividualCount))
 
-tarssmall$TwoWeekAvgMT <-c(unlist(CTTWAMT.mat[1,]))
-tarssmall$DegreeDays <- c(unlist(CTTWAMT.mat[2,]))
+#merge with location information
+tarsSiteLevel <- merge(x = uniquetrap[,c("lat2", "lon2", "elevation", "NLCDclass", "siteid")], y = tarsSiteLevel, by.y = "siteid", by.x = "siteid")
+
+tarsSiteLevel$lat2<- as.numeric(tarsSiteLevel$lat2)
+tarsSiteLevel$lon2<- as.numeric(tarsSiteLevel$lon2)
+
+#Obtain Temperature information
+CTTWAMT.mat<- mapply(Templag, tarsSiteLevel$siteid, tarsSiteLevel$date)
+
+#Create variables in tarsSiteLevel for two week temp lag and degree days
+tarsSiteLevel$TwoWeekAvgMT <-c(unlist(CTTWAMT.mat[1,]))
+tarsSiteLevel$DegreeDays <- c(unlist(CTTWAMT.mat[2,]))
 
 #Examples of tars<- id[id$scientificName=="Culex tarsalis",]
 
@@ -388,13 +404,7 @@ tarstax<-tarstax[c(5:15,17:23),]
 tarstax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeStatus"= tarstax)
 
 #Merge Cu. tarsalis taxonomy df with tars df
-tarssmall <- merge(x = tarstax.df, y = tarssmall, by.x = "domainID", by.y = "domainid")
-
-tarssmall$lat2<- as.numeric(tarssmall$lat2)
-tarssmall$lon2<- as.numeric(tarssmall$lon2)
-
-tars2014 <- tarssmall[tarssmall$Year==2014,]
-tars2016 <- tarssmall[tarssmall$Year==2016,]
+tarsSiteLevel <- merge(x = tarstax.df[,c("domainID", "DomainNativeStatus.value")], y = tarsSiteLevel, by.x = "domainID", by.y = "domainid")
 
 
 # tarssmall$TwoWeekAveragePrecip<-mapply(Preciplag, tarssmall$siteid, tarssmall$date)
@@ -417,12 +427,12 @@ tars2016 <- tarssmall[tarssmall$Year==2016,]
 # sum(complete.cases(tars2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))
 
 
-tarssmall <- tarssmall[order(as.Date(tarssmall$date)),]
+tarsSiteLevel <- tarsSiteLevel[order(as.Date(tarsSiteLevel$date)),]
 
 #Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
-tars.firstdomain <- tarssmall[match(unique(tarssmall$domainID), tarssmall$domainID),]
-tars.firstsite <- tarssmall[match(unique(tarssmall$siteid), tarssmall$siteid),]
-tars.firstplot <- tarssmall[match(unique(tarssmall$uniquePlotIDs), tarssmall$uniquePlotIDs),]
+tars.firstdomain <- tarsSiteLevel[match(unique(tarsSiteLevel$domainID), tarsSiteLevel$domainID),]
+tars.firstsite <- tarsSiteLevel[match(unique(tarsSiteLevel$siteid), tarsSiteLevel$siteid),]
+
 
 # Visualizations for domains, sites and plots where cx. tarsalis is present
 tars2016$date<-as.Date(tars2016$date)
