@@ -16,6 +16,13 @@ library(plyr)
 library(ggplot2)
 library(gridExtra)
 library(scales)
+library(foreign)
+library(rgeos)
+library(maptools)
+library(raster)
+library(rbokeh) # Maybe with a map?
+library(dplyr)
+library(rgdal) # requires sp, will use proj.4 if installed
 
 options(stringsAsFactors = FALSE) 
 
@@ -194,27 +201,24 @@ specrich$Year <- substr(specrich$date, 1,4)
 
 #Two week average max temp
 
-# st <- Sys.time() # profiling start time
-# 
-# debug(Templag)
+#Creation of Templag
+Templag <- function(siteID, date){
+  date <- as.Date(date)
+  filter1 <- temp.df[grepl(siteID, temp.df$siteID),]
+  filter2 <- filter1[filter1$date >= date - 14 & filter1$date < date + 1,]
+  TwoWeekAvgT <- mean(filter2$value)/10
+  filter3 <- filter2[filter2$value > 16,]
+  GDD <- length(unique(filter3$date))
+  # return(GDD)
+  # how to return multiple objects from a single function call
+  return(list(TwoWeekAvgT=TwoWeekAvgT, GDD=GDD))
+}
+
 SPTWAMT.mat<-mapply(Templag, specrich$siteid, specrich$date)
 # saveRDS(SPTWAMT.mat, file = 'SpeciesRichTempLag.rds')
+
 specrich$TwoWeekAvgMT<- c(unlist(SPTWAMT.mat[1,]))
 specrich$DegreeDays <- c(unlist(SPTWAMT.mat[2,]))
-# undebug(Templag)
-# 
-# end <- Sys.time(); end - st # profiling end time; calculate function execution duration
-
-# specrich <- cbind(specrich, TwoWeekAvgMT, DegreeDays)
-
-#Two week average precip
-# st <- Sys.time()
-
-#TwoWeekAvgMaxPrecip<-mapply(Preciplag, specrich$siteid, specrich$date)
-
-# end <- Sys.time(); end-st
-
-#specrich <-cbind(specrich, TwoWeekAvgMaxPrecip)
 
 #Creating a Continental indicator variable
 specrich$Continental <- ifelse(specrich$domainid %in% c('D18', 'D19'), 'Alaska', ifelse(specrich$domainid == 'D04', 'Puerto Rico', 'Continental U.S'))
@@ -393,7 +397,9 @@ CTTWAMT.mat<- mapply(Templag, tarsSiteLevel$siteid, tarsSiteLevel$date)
 tarsSiteLevel$TwoWeekAvgMT <-c(unlist(CTTWAMT.mat[1,]))
 tarsSiteLevel$DegreeDays <- c(unlist(CTTWAMT.mat[2,]))
 
-#Examples of tars<- id[id$scientificName=="Culex tarsalis",]
+#Create Year Variable from Date
+tarsSiteLevel$Year <- substr(tarsSiteLevel$date, 1,4)
+
 
 #Create df for domain ID and native code
 
@@ -406,8 +412,10 @@ tarstax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeSta
 #Merge Cu. tarsalis taxonomy df with tars df
 tarsSiteLevel <- merge(x = tarstax.df[,c("domainID", "DomainNativeStatus.value")], y = tarsSiteLevel, by.x = "domainID", by.y = "domainid")
 
+#Creation of subsets by Year
 
-# tarssmall$TwoWeekAveragePrecip<-mapply(Preciplag, tarssmall$siteid, tarssmall$date)
+tars2014 <- tarsSiteLevel[tarsSiteLevel$Year == 2014, ]
+tars2016 <- tarsSiteLevel[tarsSiteLevel$Year == 2016, ]
 
 #number of sites of appearance
 # length(unique(tars$uniquePlotIDs)) #160
@@ -427,26 +435,19 @@ tarsSiteLevel <- merge(x = tarstax.df[,c("domainID", "DomainNativeStatus.value")
 # sum(complete.cases(tars2016$newindividualCount))/sum(complete.cases(id2016$newindividualCount))
 
 
-tarsSiteLevel <- tarsSiteLevel[order(as.Date(tarsSiteLevel$date)),]
-
-#Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
-tars.firstdomain <- tarsSiteLevel[match(unique(tarsSiteLevel$domainID), tarsSiteLevel$domainID),]
-tars.firstsite <- tarsSiteLevel[match(unique(tarsSiteLevel$siteid), tarsSiteLevel$siteid),]
-
-
 # Visualizations for domains, sites and plots where cx. tarsalis is present
 tars2016$date<-as.Date(tars2016$date)
 tars2014$date<-as.Date(tars2014$date)
 # tars2013$date<-as.Date(tars2013$date)
 
 # Abundance of Culex tarsalis for 2014 and 2016
-plot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(individualCount)))+
+plot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(siteAbundance)))+
   geom_point(color = "darkblue", size = 2)+
   scale_y_continuous(limits = c(0,305))+
-  labs(x = "Date", y = "Abundance of Culex tarsalis")+
   scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month")+
+  labs(x = "Date", y = "Abundance of Culex tarsalis")+
   ggtitle("Date versus Abundance of Culex tarsalis for 2016")
-plot2014 <-ggplot(tars2014, aes(as.Date(date), as.numeric(individualCount)))+
+plot2014 <-ggplot(tars2014, aes(as.Date(date), as.numeric(siteAbundance)))+
   geom_point(color = "dark green", size = 2)+
   scale_y_continuous(limits = c(0, 305))+
   scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month", limits = as.Date(c("2014-05-01","2014-11-01")))+
@@ -458,13 +459,13 @@ grid.arrange(plot2014,plot2016)
 # Maximum temperature for 2014 and 2016
 tempplot2016 <-ggplot(tars2016, aes(as.Date(date), as.numeric(TwoWeekAvgMT)))+
   geom_point(color = "red", size = 2)+
-  labs(x = "Date", y = "Two Week Average Maximum Temperature in C")+
   scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month")+
+  labs(x = "Date", y = "Average Max Temperature in C")+
   ggtitle("Date versus Two Week Average Maximum Temperature for 2016")
 tempplot2014 <-ggplot(tars2014, aes(as.Date(date), as.numeric(TwoWeekAvgMT)))+
   geom_point(color = "purple", size = 2)+
   scale_x_date(labels = date_format("%m-%Y"), date_breaks = "1 month", limits = as.Date(c("2014-05-01","2014-11-01")))+
-  labs(x = "Date", y = "Two Week Average Maximum Temperature in C")+
+  labs(x = "Date", y = "Average Max Temperature in C")+
   ggtitle("Date versus Two Week Average Maximum Temperature for 2014")
 
 grid.arrange(tempplot2014, tempplot2016)
@@ -472,14 +473,63 @@ grid.arrange(tempplot2014, tempplot2016)
 #Plot comparison between temperature and abundance
 grid.arrange(tempplot2016, plot2016)
 
-#Abundance of Culex tarsalis by NLCD Class Code
-ggplot(tarssmall, aes(NLCDclass, as.numeric(newindividualCount)))+
-  geom_col(aes(fill = NLCDclass))+
-  guides(fill = FALSE)+
-  labs(x = "NLCD Class Code", y = "Abundance of Culex tarsalis")+
-  ggtitle("Abundance of Culex tarsalis by NLCD Class Code")
-  
-tally(id$NLCDclass)
+# #Abundance of Culex tarsalis by NLCD Class Code
+# ggplot(tarssmall, aes(NLCDclass, as.numeric(newindividualCount)))+
+#   geom_col(aes(fill = NLCDclass))+
+#   guides(fill = FALSE)+
+#   labs(x = "NLCD Class Code", y = "Abundance of Culex tarsalis")+
+#   ggtitle("Abundance of Culex tarsalis by NLCD Class Code")
+#   
+# tally(id$NLCDclass)
+
+############ WORKING ON MAPPING VIZ
+
+#Subsets containing only the rows where Cu. tarsalis was first sampled in each geographic subdivision
+tars.firstdomain <- tarsSiteLevel[match(unique(tarsSiteLevel$domainID), tarsSiteLevel$domainID),]
+tars.firstsite <- tarsSiteLevel[match(unique(tarsSiteLevel$siteid), tarsSiteLevel$siteid),]
+
+tarsSiteLevel <- tarsSiteLevel[order(as.Date(tarsSiteLevel$date)),]
+
+tars.firstdomain$domainID <- as.factor(tars.firstdomain$domainID)
+require("rgdal") # requires sp, will use proj.4 if installed
+require("maptools")
+require("ggplot2")
+require("plyr")
+
+# My working directory
+if(file.exists('~/GitHub/mosquito-intern')){ # Charlotte's path
+  repo_location = '~/GitHub/mosquito-intern'
+}
+if(file.exists('~/GitHub/mosquito-intern')){
+  repo_location = '~/GitHub/mosquito-intern'
+}
+if(!exists('repo_location')){stop('Set the location of the neon_data repository.')}
+
+# Two ways to make a map
+# Way #1: Map the data using maptools & the plot function
+# # Get shp files of NEON domains
+# Ddbf<-read.dbf(paste(repo_location, '/resources/spatial files/NEON-domain-map/NEON_Domains.dbf', sep='/'))
+# Dmap<-readShapePoly(paste(repo_location, '/resources/spatial files/NEON-domain-map/NEON_Domains.shp', sep='/'))
+# crs(Dmap) <- "+proj=utm +units=m +ellps=WGS84"
+# plot(Dmap,col="#ADA96E",bg='#77BFC7',main='NEON Domains',cex.main=1)
+# points(tars.firstdomain$lon2, tars.firstdomain$lat2, pch=21, bg= "blue",cex=1)
+# # points(long, lat)
+
+# Way #2: Using rgdal, ggplot and aes
+# Read blog post here: https://github.com/tidyverse/ggplot2/wiki/plotting-polygon-shapefiles
+
+
+
+#Read in file  
+NEONmap = readShapePoly(paste(repo_location, 'resources/spatial files/NEON-domain-map/NEON_Domains.shp', sep='/'))
+# Manipulate for plotting
+NEONmap@data$id = rownames(NEONmap@data)
+NEONmap.points = fortify(NEONmap, region="id")
+NEONmap.df = join(NEONmap.points, NEONmap@data, by="id")
+NEONmap.df$DomainID<-as.character(NEONmap.df$DomainID)
+NEONmap.df$nativestat<-ifelse(NEONmap.df$DomainID %in% c(1,2,3,5:17),1,0)
+
+typeof(tars.firstdomain$DomainNativeStatus.value)
 
 
 ```

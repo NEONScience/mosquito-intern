@@ -19,7 +19,7 @@ comments: false
 
 {% include _toc.html %}
 
-##About
+## About
 SENTENCES ADD HERE
 
 
@@ -122,7 +122,7 @@ library(mosaic)    # good for data exploration
 options(stringsAsFactors = FALSE) 
 
 # set working directory to ensure R can find the file we wish to import
-# set to the `carabid-2014-NEON` directory
+
 #setwd("working-dir-path-here")
 
 ```
@@ -263,16 +263,16 @@ SHOULD I ALSO ADD IN THE DOMAIN, PRECIP, AND TEMP TABLES HERE?
 HOW SHOULD I TALK ABOUT THE SOURCE FUNCTION
 
 
-#Wrangling the Data
+## Wrangling the Data
 
-###Obtaining location information
+### Obtaining location information
 
 Before we can begin analyzing our data frames, we need to create a few new 
 variables and collect all the information we need into a unified usable 
 dataframe. To start, we will be extracting latitude and longitude information 
 from NEON's application programming interfaces. 
 
-```{r}
+```{r location-scraping}
 
 # Create a vector of unique plotIDs from the trap dataframe to speed up the data scraping process
 uniquePlotIDs <- unique(trap$plotID)
@@ -287,7 +287,7 @@ through each element of uniquePlotIDs, apply the get_NEON_location function, and
 return a list of unique plot IDs paired with its corresponding location 
 information.
 
-```{r}
+```{r location-dataframe}
 
 # Convert list into a data frame with the do.call function
 latlon.df <- do.call(rbind, latlon)
@@ -308,7 +308,7 @@ The merge command allows users to match rows of separate dataframes by certain
 key variables (in this case by plot ID) to create one unified data frame. For 
 more information on the merge function, please see INSERT WEBSITE
 
-```{r}
+```{r trap-location-merge}
 
 # Merging trap data with latitude and  longitude data
 trap <- merge(x = latlon.df, y = trap, by.x = "uniquePlotIDs", by.y = "plotID") 
@@ -322,7 +322,7 @@ pdaDecimalLatitude and pdaDecimalLongitude have location information that was
 not present in our latlon data frame. So we use an if-else statement to collect
 all of our latitude and longitude information into two more complete variables.
 
-```{r}
+```{r obtaining-more-lat}
 
 # Filling in more latitude and longitude data
 trap$lat2<-ifelse(is.na(trap$lat)==TRUE, trap$pdaDecimalLatitude,trap$lat)
@@ -339,7 +339,7 @@ sorting data frame also contains the weight of the subsample, the weight of the
 bycatch, and the total weight of the sample. So we want to only select the 
 columns in the sorting data frame that aren't in the id data frame.
 
-```{r}
+```{r finding-unique-columns}
 
 # Create a vector of column names that are in sort but not in id
 cols = colnames(sort)[!colnames(sort)%in%colnames(id)]
@@ -355,7 +355,7 @@ first have to simplify the trap data to lower processing times. We do that by
 selecting only the rows of our trap data frame that are unique, and omitting any
 rows that have repeated Plot IDs. 
 
-```{r}
+```{r create-unique-trap}
 
 #Creating a dataframe with only the unique plotIDs and lat2 lon2 data for merging
 uniquetrap<-trap[!duplicated(trap[,1]),c("uniquePlotIDs","lat2","lon2", "elevation","NLCDclass")]
@@ -375,7 +375,7 @@ want to then merge these rows with those in our id data frame we add in columns
 that are present in the id dataframe but not in the trap data frame and row-bind
 these two data frames together.
 
-```{r}
+```{r including-trap-zero}
 # Get zero traps from trapping
 new_trap<- trap[!trap$sampleID %in% id$sampleID & trap$targetTaxaPresent=="N",]
 
@@ -404,7 +404,7 @@ the sample multiplier is infinity with NAs. We then create a new variable called
 'newindividualCount'where we multiply the individual count by the sample
 multiplier.
 
-```{r}
+```{r fixing-individualCount}
 
 #Creation of sample Multiplier
 id$sampleMultiplier <- ifelse(is.na(id$bycatchWeight), id$totalWeight/id$subsampleWeight, id$totalWeight/(id$subsampleWeight-id$bycatchWeight))
@@ -431,7 +431,7 @@ was set until midnight by subtracting the set time from 24, then added the
 number of hours the trap was deployed on the collect day to yield the hours of 
 deployment. 
 
-```{r}
+```{r trapping-hours}
 
 #Creation of a variable to test whether samples were collected on the same day or different days
 id$sameDay <- ifelse(substr(id$collectDate, 9, 10) != substr(id$setDate,9,10), FALSE, TRUE)
@@ -460,7 +460,7 @@ collection information is missing, the date of when the sample was recieved so
 we can extract year information in a similar fashion from the 'recievedDate' 
 variable. 
 
-```{r}
+```{r date-and-year}
 
 #Extracting year information for id
 id$Year<-substr(id$collectDate,1,4)
@@ -487,7 +487,7 @@ units of our maximum temperature variable by dividing each number in the column
 called 'value' by ten. Then for clarity we rename the variable 'value' as 
 'Max.TempC'. We then repeat this process for our precipitation data. 
 
-```{r}
+```{r temp-data}
 
 #Change temp date type
 temp.df$date <- as.Date(temp.df$date)
@@ -521,7 +521,7 @@ are almost ready to start analyzing our NEON data. However we need to add domain
 and taxon rank information to our data frames so we can track changes in
 mosquito ranges and filter out missing data.
 
-```{r}
+```{r domain-taxonomy}
 
 #Merge with domain info.
 id <- merge(x = domain.df, y = id, by.y = "siteID", by.x = "siteid", all.y = TRUE)

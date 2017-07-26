@@ -71,16 +71,17 @@ q <- ggplot()+
 
 gganimate(q, interval = 3, 'test.gif')
 
+domain.df <- merge(x = uniquetrap[,c("lat2", "lon2", "siteid")], y = domain.df, by.x = "siteid", by.y = "siteid")
 
 mapviz<-ggplot()+
-  geom_polygon(data = NEONmap.df, aes(long, lat, group=group, fill= nativestat))+
+  geom_polygon(data = NEONmap.df, aes(long, lat, group=group, fill= as.factor(nativestat)))+
   guides(fill=FALSE)+
   geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')+
-  geom_point(data = tars.firstdomain, aes( lon2, lat2), color = 'red', size = 2)+
+  geom_point(data = tars.firstdomain, aes( lon2, lat2, color = DomainNativeStatus.value), size = 2)+
+  scale_fill_manual(values = c("red","black"))+
   labs( x = "Longitude", y ="Latitude")+
   # ggtitle("Map of Culex tarsalis Observation and Native Status")+
-  theme(plot.title = element_text(size = 16, face = "bold"))+
-  theme_bw()
+  theme(plot.title = element_text(size = 16, face = "bold"))
 
 gg <- ggplot()+
   geom_polygon(data = NEONmap.df, aes(long, lat, group=group), fill = 'white')+
