@@ -3,9 +3,9 @@ layout: post
 title: "Methods of Exploring NEON Mosquito Data in R"
 date:  2017-06-16
 authors: [Charlotte Roiger]
-dateCreated: 2017-06-16
+dateCreated:  2017-05-20
 lastModified: `r format(Sys.time(), "%Y-%m-%d")`
-description: "This is a tutorial that shows users how to clean and perform an initial analysios using NEON mosquito data."
+description: "This is a tutorial that shows users how to clean and perform an initial analysis using NEON mosquito data."
 tags: [R]
 image: #update later
   feature: TeachingModules.jpg
@@ -59,7 +59,7 @@ installed prior to starting the tutorial.
 
 
 
-################################################################################################
+
 
 ### Download The Data
 **NOTE: eventually turn these into teaching data subsets with others, then change to download buttons**
@@ -68,7 +68,7 @@ NOAA weather data for each site [here](//github.com/klevan/carabid-workshop/blob
 NEON map shp files [here](//github.com/klevan/carabid-workshop/blob/master/data/zip%20files/map%20data.zip) 
 and the script we will be modifying [here](//github.com/klevan/carabid-workshop/blob/master/code/data-analysis.R). 
 </div>
-#################################################################################################
+
 
 
 ## NEON Mosquito Data
@@ -543,7 +543,7 @@ out any observations in our data that are not identified down to the species or
 subspecies level so we can get a better idea of species richness and find 
 samples where *Culex tarsalis* was present.
 
-```{r}
+```{r filtering-id}
 
 #Filter by species and subspecies classification
 id <- dplyr::filter(id, id$taxonRank %in% c("subspecies","species"))
@@ -571,7 +571,7 @@ number of unique scientific names for each plot and date. We also choose to
 include certain variables in the id data frame that could be relevant to our 
 exploration of species richness
 
-```{r}
+```{r create-specrich}
 
 specrich <- ddply(idsmall, ~ siteid + domainid + date, summarize, num_species = length(unique(scientificName)))
 ```
@@ -588,7 +588,7 @@ scatterplot of species richness over latitude by coloring the dots in our plot
 with their corresponding year. 
 
 
-```{r}
+```{r plot-richness}
 
 #Omit all instances where date is unknown
 specrich <- specrich[complete.cases(specrich$date),]
@@ -647,7 +647,7 @@ take an average of the maximum temperature for the 14 days prior to collection
 at each site and also count the number of days where the maximum temperature was
 greater than 16 degrees Celsius.  
 
-```{r}
+```{r templag-function}
 
 Templag <- function(siteID, date){ 
   date <- as.Date(date) #Converting all date inputs into date format
@@ -670,7 +670,7 @@ maximum temperature.
 
 
 
-```{r}
+```{r apply-templag}
 
 #Applying temp lag fucntion to species richness data frame
 SPTWAMT.mat<-mapply(Templag, specrich$siteid, specrich$date)
@@ -714,7 +714,7 @@ To begin our investigation of spatial patterns and phenology of the species
 relating to *Culx tarsalis* is present. But first we take a look at the number
 times *Culex tarsalis* was present in our data.
 
-```{r}
+```{r first-look-at-CuT}
 
 #Instances of Cu. tarsalis by Year
 table(id$Year, id$scientificName=="Culex tarsalis")
@@ -728,7 +728,7 @@ to only include rows of data where *Culex tarsalis* is in the 'scientificName'
 variable column. We next create an even smaller subset of our data by selecting
 rows whose year was either 2014 or 2016.
 
-```{r}
+```{r create-CuT-Dfs}
 
 #Creation of a subset with only Culex tarsalis
 tars<- id[grepl("Culex tarsalis", id$scientificName),]
@@ -754,7 +754,7 @@ applying the temperature lag fucntion to the new *Culex tarsalis* data frame
 ('tarssmall'). 
 
 
-```{r}
+```{r apply-templag-again}
 #Applying temperature lag function to tarssmall
 CTTWAMT.mat<- mapply(Templag, tarsSiteLevel$siteid, tarsSiteLevel$date)
 
@@ -771,7 +771,7 @@ considered to be native. One problem with obtaining the native status of
 *Culex tarsalis* is that the native status information is contained in the 
 taxonomy data frame as a single row of data, as demonstrated below.
 
-```{r}
+```{r obtain-taxonomy}
 
 #A look at the row of data in the taxonomy data frame 
 taxonomy[grepl("Culex tarsalis", taxonomy$scientificName),]
@@ -785,7 +785,7 @@ information to be in the form of a column or vector to be added to our current
 to find the columns in the taxonomy data frame that contained native status
 information and transformed that row of information into a new data frame.
 
-```{r}
+```{r taxonomy-dataframe}
 
 #Selecting certain columns of the tarstax data frame to find native status information
 tarstax <- tidyr:: gather(taxonomy[grepl("Culex tarsalis", taxonomy$scientificName), grepl("NativeStatusCode", colnames(taxonomy))], "Domain ID")
@@ -799,7 +799,7 @@ tarstax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeSta
 ```
 
 
-```{r}
+```{r merge-taxonomy-sitelevel}
 #Merge Cu. tarsalis taxonomy df with tars df
 tarsSiteLevel <- merge(x = tarstax.df[,c("domainID", "DomainNativeStatus.value")], y = tarsSiteLevel, by.x = "domainID", by.y = "domainid")
 

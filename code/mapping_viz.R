@@ -59,31 +59,35 @@ NEONmap.df$nativestat<-ifelse(NEONmap.df$DomainID %in% c(1,2,3,5:17),1,0)
 # NEONmap.df <-merge(x = tarstax.df, y = NEONmap.df, by.x = "domainID", by.y = "DomainIDnew", all=T )
 
 
-# make the plot, allows for multiple df use
-q <- ggplot()+
-  geom_polygon(data = NEONmap.df, aes(long, lat, group=group, fill= nativestat))+
-  guides(fill=FALSE)+
-  geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')+
-  geom_point(data = tars.firstdomain, aes( lon2, lat2, frame = Year), color = 'red', size = 2.5)+
-  labs( x = "Longitude", y ="Latitude")+
-  ggtitle("Map of where Culex tarsalis Found and Native Status")+
-  theme(plot.title = element_text(size = 16, face = "bold"))
+# # make the plot, allows for multiple df use
+# q <- ggplot()+
+#   geom_polygon(data = NEONmap.df, aes(long, lat, group=group, fill= nativestat))+
+#   guides(fill=FALSE)+
+#   geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')+
+#   geom_point(data = tars.firstdomain, aes( lon2, lat2, frame = Year), color = 'red', size = 2.5)+
+#   labs( x = "Longitude", y ="Latitude")+
+#   ggtitle("Map of where Culex tarsalis Found and Native Status")+
+#   theme(plot.title = element_text(size = 16, face = "bold"))
+# 
+# gganimate(q, interval = 3, 'test.gif')
 
-gganimate(q, interval = 3, 'test.gif')
 
-domain.df <- merge(x = uniquetrap[,c("lat2", "lon2", "siteid")], y = domain.df, by.x = "siteid", by.y = "siteid")
+domain.df$tarsPresent<- as.factor(domain.df$tarsPresent)
+domain.df$lat2<- as.numeric(domain.df$lat2)
+domain.df$lon2<- as.numeric(domain.df$lon2)
+
 
 mapviz<-ggplot()+
   geom_polygon(data = NEONmap.df, aes(long, lat, group=group, fill= as.factor(nativestat)))+
-  guides(fill=FALSE)+
-  geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'white')+
-  geom_point(data = tars.firstdomain, aes( lon2, lat2, color = DomainNativeStatus.value), size = 2)+
-  scale_fill_manual(values = c("red","black"))+
+  geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'black')+
+  scale_fill_manual(values = c("gold", "lightyellow2")) +
+  geom_point(data = domain.df, aes( lon2, lat2, color = tarsPresent),size = 2)+
   labs( x = "Longitude", y ="Latitude")+
-  # ggtitle("Map of Culex tarsalis Observation and Native Status")+
-  theme(plot.title = element_text(size = 16, face = "bold"))
+  ggtitle("Map of Culex tarsalis Observation and Native Status")+
+  theme(plot.title = element_text(size = 16, face = "bold"))+
+  guides(fill = FALSE, color = FALSE)
 
-gg <- ggplot()+
-  geom_polygon(data = NEONmap.df, aes(long, lat, group=group), fill = 'white')+
-  geom_path(data = NEONmap.df, aes(long, lat, group = group), color = 'black')
+# gg <- ggplot()+
+#   geom_polygon(data = NEONmap.df, aes(long, lat, group=group), fill = 'white')+
+#   geom_path(data = NEONmap.df, aes(long, lat, group = group), color = 'black')
 
