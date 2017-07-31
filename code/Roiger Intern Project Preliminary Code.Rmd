@@ -226,8 +226,8 @@ specrich$Continental <- ifelse(specrich$domainid %in% c('D18', 'D19'), 'Alaska',
 #Preliminary graph of latitude by species richness overall
 ggplot(specrich,aes(lat2, num_species))+
   geom_point(aes(colour = Continental), size = 2)+
-  guides(fill = FALSE, color = FALSE)+
-  labs(x = "Latitude", y = "Number of Species")
+  labs(x = "Latitude", y = "Number of Species")+
+  guides(fill = FALSE, color = FALSE)
   ggtitle("Species Richness by Latitude")
 
 # #Preliminary graph of latitude vs. maximum temp
@@ -245,7 +245,8 @@ ggplot(specrich,aes(lat2, num_species))+
 #Preliminary graph of species richness by max temp avg
 ggplot(specrich, aes(TwoWeekAvgMT, num_species))+
   geom_point(aes(color = Year), size = 2)+
-  labs(x = "Two Week Average Maximum Temperature in Celsius", y = "Number of Species")
+  labs(x = "Two Week Average Maximum Temperature in Celsius", y = "Number of Species")+
+  guides(fill = FALSE, color = FALSE)
   ggtitle("Species Richness by Two Week Average Maximum Temperature")
 
 #Preliminary graph of species richness by degree day
