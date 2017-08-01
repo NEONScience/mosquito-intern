@@ -223,8 +223,9 @@ ggplot(specrich, aes(TwoWeekAvgMT, num_species))+
 Looking at the scatterplot of species richness by two week average maximum 
 temperature, we can see a sort of distribution where species richness is highest
 where the average maximum temperature two weeks prior to collection was between 
-25 to 32 degrees Celsius with a couple of outliers around 24 and 28 degrees
-Celsius. FINISH THIS
+25 to 32 degrees Celsius. This sort of pattern suggests that there is some sort
+of relationship between species richness and the two week average maximum
+temperature prior to collection. 
 
 <div id = "challenge" markdown = "1">
 
@@ -233,7 +234,7 @@ Celsius. FINISH THIS
 Now that we've created and applied a function that can calculate the average 
 maximum temperature over a two week period before collection, try creating a
 function that gauges the amount of precipitation at a sampling site before
-collection. 
+collection and creating your own visualizations using the function outputs. 
 
 </div>
 
