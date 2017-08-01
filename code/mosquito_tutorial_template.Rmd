@@ -576,7 +576,6 @@ exploration of species richness
 specrich <- ddply(idsmall, ~ siteid + domainid + date, summarize, num_species = length(unique(scientificName)))
 ```
 
-#################Why can't I just add it to ddply???? investigate later.############
 
 Next we merge our newply formed species ricness data frame with location
 information and convert latitude and longitude information into  a numeric. To 
