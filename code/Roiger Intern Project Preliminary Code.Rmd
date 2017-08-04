@@ -54,16 +54,16 @@ latlon <- lapply(uniquePlotIDs, get_NEON_location, output="latlon")
 latlon.df <- do.call(rbind, latlon)
 
 ## matching the names of your columns
-names(latlon.df) <- c("uniquePlotIDs", "lat", "lon", "northing", "easting", "utmZone", "elevation", "NLCDclass") 
+names(latlon.df) <- c("plotID", "lat", "lon", "elevation", "nlcdClass") 
 
 trap$plotID<-as.character(trap$plotID)
 
 #Merging trap df with lat lon data
-trap <- merge(x = latlon.df, y = trap, by.x = "uniquePlotIDs", by.y = "plotID") #merge example
+trap <- merge(x = latlon.df, y = trap, by.x = "plotID", by.y = "plotID") #merge example
 
 #Filling in more lat lon data
-trap$lat2<-ifelse(is.na(trap$lat)==TRUE, trap$pdaDecimalLatitude,trap$lat)
-trap$lon2<-ifelse(is.na(trap$lon)==TRUE, trap$pdaDecimalLongitude,trap$lon)
+trap$decimalLatitude<-ifelse(is.na(trap$lat)==TRUE, trap$pdaDecimalLatitude,trap$lat)
+trap$decimalLongitude<-ifelse(is.na(trap$lon)==TRUE, trap$pdaDecimalLongitude,trap$lon)
 
 
 # Merge ID with sort
@@ -72,11 +72,11 @@ id <- left_join(id, sort[, c('subsampleID', cols)],
                 by = "subsampleID")
 
 #Creating a dataframe with only the unique plotIDs and lat2 lon2 data for merging
-uniquetrap<-trap[!duplicated(trap[,1]),c("uniquePlotIDs","lat2","lon2", "elevation","NLCDclass")]
+uniquetrap<-trap[!duplicated(trap[,1]),c("plotID","decimalLatitude","decimalLongitude", "elevation","nlcdClass")]
 
 
 #Merging id df with lat2 lon2 data
-id <- merge(x = uniquetrap, y = id, by.y = "plotID", by.x = "uniquePlotIDs", all.y = TRUE)
+id <- merge(x = uniquetrap, y = id, by.y = "plotID", by.x = "plotID", all.y = TRUE)
 
 # Get zero traps from trapping
 new_trap<- trap[!trap$sampleID %in% id$sampleID & trap$targetTaxaPresent=="N",]
@@ -151,6 +151,8 @@ id$siteID<-substr(id$subsampleID, 1,4)
 id <- merge(x = domain.df, y = id, by.y = "siteID", by.x = "siteid", all.y = TRUE)
 id$domainid <- as.character(id$domainid)
 
+colnames(id)[1:2]<-c("siteID", "domainID")
+
 #Merge with taxonomy df for taxson rank
 id <- merge( x = taxonomy[,c("scientificName", "taxonRank")], y = id, by.x = "scientificName", by.y = "scientificName")
 
@@ -168,7 +170,7 @@ idsmall<-dplyr::filter(id, id$Year %in% c(2014,2016))
 ```{r}
 #Creation of a dataframe that maps plotIds to number of unique scientific names
 
-specrich <- ddply(idsmall, ~ siteid + domainid + Date, summarize, num_species = length(unique(scientificName)))
+specrich <- ddply(idsmall, ~ siteID + domainID + Date, summarize, num_species = length(unique(scientificName)))
 
 
 #Omit all instances where date is unknown
@@ -177,21 +179,20 @@ specrich <- specrich[complete.cases(specrich$Date),]
 #Merging to get lat2 lon2 data
 
 #First extract site id for the uniquetrap data frame
-uniquetrap$siteid <- substr(uniquetrap$uniquePlotIDs,1,4)
+uniquetrap$siteID <- substr(uniquetrap$plotID,1,4)
 
 #Omit any instances where lat and lon is not known for a site
-uniquetrap <- uniquetrap[uniquetrap$lat2!="",]
+uniquetrap <- uniquetrap[uniquetrap$decimalLatitude!="",]
 
 #taking only the observations that are not duplicated
-uniquetrap <- uniquetrap[!duplicated(uniquetrap$siteid),]
+uniquetrap <- uniquetrap[!duplicated(uniquetrap$siteID),]
 
 
 #merge with lat lon data excluding plotID
-specrich <- merge(x = uniquetrap[,c("lat2", "lon2", "elevation", "NLCDclass", "siteid")], y = specrich, by.y = "siteid", by.x = "siteid")
+specrich <- merge(x = uniquetrap[,c("siteID", "decimalLatitude", "decimalLongitude", "elevation", "nlcdClass")], y = specrich, by.y = "siteID", by.x = "siteID")
 
 #Changin lat2 to a numeric and date to date class
-specrich$lat2<-as.numeric(specrich$lat2)
-specrich$date<-as.Date(specrich$Date)
+specrich$decimalLatitude<-as.numeric(specrich$decimalLatitude)
 
 #Creating a Year variable
 
@@ -212,20 +213,19 @@ Templag <- function(siteID, date){
   return(list(TwoWeekAvgT=TwoWeekAvgT, GDD=GDD))
 }
 
-SPTWAMT.mat<-mapply(Templag, specrich$siteid, specrich$date)
+SPTWAMT.mat<-mapply(Templag, specrich$siteID, specrich$Date)
 # saveRDS(SPTWAMT.mat, file = 'SpeciesRichTempLag.rds')
 
 specrich$TwoWeekAvgMT<- c(unlist(SPTWAMT.mat[1,]))
 specrich$DegreeDays <- c(unlist(SPTWAMT.mat[2,]))
 
 #Creating a Continental indicator variable
-specrich$Continental <- ifelse(specrich$domainid %in% c('D18', 'D19'), 'Alaska', ifelse(specrich$domainid == 'D04', 'Puerto Rico', 'Continental U.S'))
+specrich$Continental <- ifelse(specrich$domainID %in% c('D18', 'D19'), 'Alaska', ifelse(specrich$domainID == 'D04', 'Puerto Rico', 'Continental U.S'))
 
 #Preliminary graph of latitude by species richness overall
-ggplot(specrich,aes(lat2, num_species))+
+ggplot(specrich,aes(decimalLatitude, num_species))+
   geom_point(aes(colour = Continental), size = 2)+
   labs(x = "Latitude", y = "Number of Species")+
-  guides(fill = FALSE, color = FALSE)
   ggtitle("Species Richness by Latitude")
 
 # #Preliminary graph of latitude vs. maximum temp
@@ -244,7 +244,6 @@ ggplot(specrich,aes(lat2, num_species))+
 ggplot(specrich, aes(TwoWeekAvgMT, num_species))+
   geom_point(aes(color = Year), size = 2)+
   labs(x = "Two Week Average Maximum Temperature in Celsius", y = "Number of Species")+
-  guides(fill = FALSE, color = FALSE)
   ggtitle("Species Richness by Two Week Average Maximum Temperature")
 
 #Preliminary graph of species richness by degree day
@@ -382,16 +381,16 @@ tars<- id[grepl("Culex tarsalis", id$scientificName),]
 tarssmall <- tars[tars$Year %in% c(2014,2016), ]
 
 #Site Level variable
-tarsSiteLevel <- ddply(tarssmall,~siteid + domainid + Date, summarize, siteAbundance = sum(newindividualCount))
+tarsSiteLevel <- ddply(tarssmall,~siteID + domainID + Date, summarize, siteAbundance = sum(newindividualCount))
 
 #merge with location information
-tarsSiteLevel <- merge(x = uniquetrap[,c("lat2", "lon2", "elevation", "NLCDclass", "siteid")], y = tarsSiteLevel, by.y = "siteid", by.x = "siteid")
+tarsSiteLevel <- merge(x = uniquetrap[,c("siteID", "decimalLatitude", "decimalLongitude", "elevation", "nlcdClass")], y = tarsSiteLevel, by.y = "siteID", by.x = "siteID")
 
-tarsSiteLevel$lat2<- as.numeric(tarsSiteLevel$lat2)
-tarsSiteLevel$lon2<- as.numeric(tarsSiteLevel$lon2)
+tarsSiteLevel$decimalLatitude<- as.numeric(tarsSiteLevel$decimalLatitude)
+tarsSiteLevel$decimalLongitude<- as.numeric(tarsSiteLevel$decimalLongitude)
 
 #Obtain Temperature information
-CTTWAMT.mat<- mapply(Templag, tarsSiteLevel$siteid, tarsSiteLevel$Date)
+CTTWAMT.mat<- mapply(Templag, tarsSiteLevel$siteID, tarsSiteLevel$Date)
 
 #Create variables in tarsSiteLevel for two week temp lag and degree days
 tarsSiteLevel$TwoWeekAvgMT <-c(unlist(CTTWAMT.mat[1,]))
@@ -410,17 +409,13 @@ tarstax<-tarstax[c(5:15,17:23),]
 tarstax.df <-data.frame("domainID"= unique(domain.df$domainid), "DomainNativeStatus"= tarstax)
 
 #Merge Cu. tarsalis taxonomy df with tars df
-tarsSiteLevel <- merge(x = tarstax.df[,c("domainID", "DomainNativeStatus.value")], y = tarsSiteLevel, by.x = "domainID", by.y = "domainid")
+tarsSiteLevel <- merge(x = tarstax.df[,c("domainID", "DomainNativeStatus.value")], y = tarsSiteLevel, by.x = "domainID", by.y = "domainID")
 
 #Creation of subsets by Year
 
 tars2014 <- tarsSiteLevel[tarsSiteLevel$Year == 2014, ]
 tars2016 <- tarsSiteLevel[tarsSiteLevel$Year == 2016, ]
 
-tars2 <- tars[tars$Year %in% c(2014,2016),]
-
-sum(tars2$newindividualCount)
-sum(tarsSiteLevel$siteAbundance)
 
 #number of sites of appearance
 # length(unique(tars$uniquePlotIDs)) #160
@@ -494,7 +489,7 @@ grid.arrange(tempplot2016, plot2016)
 tarsSiteLevel <- tarsSiteLevel[order(as.Date(tarsSiteLevel$Date)),]
 
 tars.firstdomain <- tarsSiteLevel[match(unique(tarsSiteLevel$domainID), tarsSiteLevel$domainID),]
-tars.firstsite <- tarsSiteLevel[match(unique(tarsSiteLevel$siteid), tarsSiteLevel$siteid),]
+tars.firstsite <- tarsSiteLevel[match(unique(tarsSiteLevel$siteID), tarsSiteLevel$siteID),]
 
 require("rgdal") # requires sp, will use proj.4 if installed
 require("maptools")
@@ -534,23 +529,23 @@ NEONmap.df = join(NEONmap.points, NEONmap@data, by="id")
 NEONmap.df$DomainID<-as.character(NEONmap.df$DomainID)
 NEONmap.df$nativestat<-ifelse(NEONmap.df$DomainID %in% c(1,2,3,5:17), "Native", "Absent")
 
-domain.df <- merge(x = uniquetrap[,c("lat2", "lon2", "siteid")], y = domain.df, by.x = "siteid", by.y = "siteid")
+domain.df <- merge(x = uniquetrap[,c("siteID","decimalLatitude", "decimalLongitude")], y = domain.df, by.x = "siteID", by.y = "siteid")
 
-domain.df <- merge(x = tars.firstsite[,c("siteid","DomainNativeStatus.value")], y = domain.df, by.x = "siteid", by.y = "siteid", all.y = TRUE)
+domain.df <- merge(x = tars.firstsite[,c("siteID","DomainNativeStatus.value")], y = domain.df, by.x = "siteID", by.y = "siteID", all.y = TRUE)
 
 domain.df$tarsPresent <- ifelse(is.na(domain.df$DomainNativeStatus.value), "Not Prsent", "Present" )
 
-domain.df<- domain.df[domain.df$siteid %in% idsmall$siteid,]
+domain.df<- domain.df[domain.df$siteID %in% idsmall$siteID,]
 
 domain.df$tarsPresent<- as.factor(domain.df$tarsPresent)
-domain.df$lat2<- as.numeric(domain.df$lat2)
-domain.df$lon2<- as.numeric(domain.df$lon2)
+domain.df$decimalLatitude<- as.numeric(domain.df$decimalLatitude)
+domain.df$decimalLongitude<- as.numeric(domain.df$decimalLongitude)
 
 mapviz<-ggplot()+
   geom_polygon(data = NEONmap.df, aes(long, lat, group=group, fill= as.factor(nativestat)))+
   geom_path(data = NEONmap.df, aes(long,lat, group=group), color = 'black')+
   scale_fill_manual(values = c("lightyellow2", "gold")) +
-  geom_point(data = domain.df, aes( lon2, lat2, color = tarsPresent),size = 2)+
+  geom_point(data = domain.df, aes( decimalLatitude, decimalLongitude, color = tarsPresent),size = 2)+
   labs( x = "Longitude", y ="Latitude")+
   ggtitle("Map of Culex tarsalis Observation and Native Status")+
   theme(plot.title = element_text(size = 16, face = "bold"))

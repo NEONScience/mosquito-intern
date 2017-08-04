@@ -29,9 +29,6 @@ get_NEON_location <- function(namedLocation = NULL, output = NULL){
   con = data.frame('namedLocation' = namedLocation,
                    'decimalLatitude' = NA,
                    'decimalLongitude' = NA,
-                   'northing' = NA,
-                   'easting' = NA,
-                   'utmZone' = NA,
                    'elevation' = NA,
                    'ncldClass' = NA
                    )
@@ -43,12 +40,6 @@ get_NEON_location <- function(namedLocation = NULL, output = NULL){
                                                 '',content$data$locationDecimalLatitude),
                      'decimalLongitude' = ifelse(is.null(content$data$locationDecimalLongitude),
                                                  '',content$data$locationDecimalLongitude),
-                     'northing' = ifelse(is.null(content$data$locationUtmNorthing),
-                                         '',content$data$locationUtmNorthing),
-                     'easting' = ifelse(is.null(content$data$locationUtmEasting),
-                                        '',content$data$locationUtmEasting),
-                     'utmZone' = ifelse(is.null(content$data$locationUtmZone),
-                                        '',content$data$locationUtmZone),
                      'elevation' = ifelse(is.null(content$data$locationElevation),
                                           '',content$data$locationElevation),
                      'ncldClass' = ifelse(!"Value for National Land Cover Database (2001)"%in%
