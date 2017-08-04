@@ -84,11 +84,11 @@ options(stringsAsFactors = FALSE)
 
 #setwd("working-dir-path-here")
 
-#Read in the data
+#Read in the data from part one of this tutorial series
 
-idsmall = read.csv("idsmall.csv")
+idsmall = read.csv("NEON-mosquito-data-viz/idsmall.csv")
 
-uniquetrap = read.csv("uniquetrap.csv")
+uniquetrap = read.csv("NEON-mosquito-data-viz/uniquetrap.csv")
 
 ```
 

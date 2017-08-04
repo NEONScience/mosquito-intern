@@ -14,7 +14,7 @@ image: #update later
 permalink: /R/carabid-clean-data # update later
 code1: carabid-beetle-data/Beetle-Data-Clean-Portal-Data.R # update later
 code2: carabid-beetle-data/carabid-NEON-data-cleanup.R # update later
-comments: false
+comments: true
 ---
 
 {% include _toc.html %}
@@ -273,7 +273,6 @@ Center.
   + `station`: The station id of where each sample was taken.
   + `value`: The maximum temperature given in tenths of a degree Celsius
   + `siteID`: The closest NEON site to a NOAA weather station
-
 
 ## Wrangling the Data
 
@@ -538,10 +537,10 @@ proceed immediately to the next tutorial in the series.
 ```{r}
 
 #Write idsmall as a csv
-write.csv(idsmall, "idsmall.csv")
+write.csv(idsmall, "NEON-mosquito-data-viz/idsmall.csv")
 
 #Write uniquetrap as a csv
-write.csv(uniquetrap, "uniquetrap.csv")
+write.csv(uniquetrap, "NEON-mosquito-data-viz/uniquetrap.csv")
 
 ```
 

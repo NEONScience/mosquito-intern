@@ -19,11 +19,7 @@ source(paste(repo_location, 'get_NEON_data_by_productID.R', sep='/'))
 mos = get_data_product(productID = "DP1.10043.001", 
                        df = c('mos_trapping', 'mos_sorting', 'mos_expertTaxonomistIDProcessed', 'mos_expertTaxonomistIDRaw','mos_archivepooling', 'mos_barcoding'))
 
-# Mosquito pathogen data "DP1.10041.001"
-# contains 2 tables: 'mos_pathogenpooling','mos_pathogenresults'
-mpt = get_data_product(productID = "DP1.10041.001", df = c('mos_pathogenpooling','mos_pathogenresults'))
-
-
-# Look at data
-View(mos$mos_trapping)
-View(mos$mos_expertTaxonomistIDProcessed)
+# Rename table outputs for Charlotte's script
+trap = mos$mos_trapping
+sort = mos$mos_sorting
+id = mos$mos_expertTaxonomistIDProcessed
